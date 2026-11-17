@@ -1,0 +1,24 @@
+@import 'tailwindcss';
+
+/* Palette provisoire « court de tennis / pause » — le design sera retravaillé après les fonctionnalités. */
+@theme {
+  --color-court: #1f5135;
+  --color-court-light: #2e6f4a;
+  --color-clay: #c4622d;
+  --color-ball: #d9ef3c;
+  --color-chalk: #f5f1e6;
+  --color-ink: #1d2420;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  background-color: var(--color-chalk);
+  color: var(--color-ink);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
