@@ -26,3 +26,9 @@ for f in supabase/tests/[0-9]*.test.sql; do
   echo "→ tests $(basename "$f")"
   "${PSQL[@]}" -o /dev/null -d "$DB" -f "$f" 2>&1 | sed 's/^psql:[^ ]* NOTICE:  /  /'
 done
+
+# Simulation de bout en bout (tournois complets joués avec la logique du site), si les dépendances sont installées.
+if [ -d node_modules/pg ]; then
+  echo "→ simulation de tournois complets"
+  node scripts/simulate-db.ts "$DB" "${SIMULATION_TOURNAMENTS:-80}" ${SIMULATION_SEED:-}
+fi

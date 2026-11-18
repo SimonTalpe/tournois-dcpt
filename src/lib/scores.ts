@@ -82,6 +82,8 @@ export type ResultContext = {
   resultBy: string | null
   resultByAdmin: boolean
   resultFirstAt: string | null
+  /** Match de poule alors que la phase finale est générée (résultats figés). */
+  poolLocked?: boolean
 }
 
 export type ResultRights =
@@ -102,6 +104,9 @@ export function resultRights(
   if (!viewer.isAdmin && !(viewer.isActivePlayer && inMatch)) return { canEdit: false, reason: null }
   if (!(tournamentStatus === 'in_progress' || (viewer.isAdmin && tournamentStatus === 'finished'))) {
     return { canEdit: false, reason: 'Le tournoi n’est pas en cours.' }
+  }
+  if (match.poolLocked) {
+    return { canEdit: false, reason: 'Phase finale générée : les résultats de poule sont figés.' }
   }
   if (!['pending', 'played'].includes(match.status) || !match.homePlayerId || !match.awayPlayerId) {
     return { canEdit: false, reason: 'Les deux joueurs du match ne sont pas encore connus.' }

@@ -2,6 +2,8 @@
  * Classements de poule.
  *
  * - Classement d'abord au nombre de victoires.
+ * - Joueur remplacé en cours de poule : ses matchs joués restent à son nom (il n'est plus classé),
+ *   mais comptent pour ses adversaires ; son remplaçant est classé sur ses propres matchs.
  * - Mini-pong, à égalité de victoires : confrontations directes entre les joueurs à égalité
  *   (appliquées à nouveau dans chaque sous-groupe), puis différence de sets, puis différence de points
  *   (sur tous les matchs de poule).
@@ -90,28 +92,23 @@ export function computePoolStanding(
   const rows = new Map(playerIds.map((id) => [id, emptyRow(id)]))
   const counted = matches.filter((m) => (m.status === 'played' || m.status === 'walkover') && m.winner)
 
-  for (const m of counted) {
-    const home = rows.get(m.home)
-    const away = rows.get(m.away)
-    if (!home || !away) continue
-    for (const row of [home, away]) row.played++
-    const winner = m.winner === m.home ? home : away
-    const loser = winner === home ? away : home
-    winner.wins++
-    loser.losses++
+  // Un match contre un joueur qui n'est plus inscrit (remplacé en cours de poule) compte pour son adversaire.
+  const tally = (row: StandingRow | undefined, side: 'home' | 'away', m: StandingMatch) => {
+    if (!row) return
+    const other = side === 'home' ? 'away' : 'home'
+    row.played++
+    if (m.winner === m[side]) row.wins++
+    else row.losses++
     for (const s of m.sets) {
-      home.pointsFor += s.home
-      home.pointsAgainst += s.away
-      away.pointsFor += s.away
-      away.pointsAgainst += s.home
-      if (s.home > s.away) {
-        home.setsFor++
-        away.setsAgainst++
-      } else {
-        away.setsFor++
-        home.setsAgainst++
-      }
+      row.pointsFor += s[side]
+      row.pointsAgainst += s[other]
+      if (s[side] > s[other]) row.setsFor++
+      else row.setsAgainst++
     }
+  }
+  for (const m of counted) {
+    tally(rows.get(m.home), 'home', m)
+    tally(rows.get(m.away), 'away', m)
   }
   const complete = matches.every((m) => DONE.has(m.status))
 

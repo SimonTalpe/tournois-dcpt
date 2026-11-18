@@ -40,5 +40,10 @@ jobs:
       PGPASSWORD: postgres
     steps:
       - uses: actions/checkout@v4
-      - name: Migrations et tests SQL
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Migrations, tests SQL et simulation de tournois complets
         run: ./scripts/test-sql.sh
