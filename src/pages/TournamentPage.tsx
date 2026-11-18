@@ -5,6 +5,7 @@ import { isAdmin, useAuth } from '../features/auth/AuthContext.ts'
 import { loadTournament } from '../features/tournaments/api.ts'
 import { BracketView } from '../features/tournaments/BracketView.tsx'
 import { PoolsView } from '../features/tournaments/PoolsView.tsx'
+import { MatchDialog, type Viewer } from '../features/tournaments/MatchDialog.tsx'
 import { TournamentAdmin } from '../features/tournaments/TournamentAdmin.tsx'
 import {
   DISCIPLINE_ICONS,
@@ -24,6 +25,7 @@ export function TournamentPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [bundle, setBundle] = useState<TournamentBundle | null | undefined>(undefined)
   const [error, setError] = useState<string | null>(null)
+  const [openMatchId, setOpenMatchId] = useState<string | null>(null)
 
   const reload = useCallback(async () => {
     try {
@@ -58,6 +60,14 @@ export function TournamentPage() {
   const hasMain = rounds.some((r) => r.bracket === 'main')
   const hasConsolation = rounds.some((r) => r.bracket === 'consolation')
   const myPlayerId = [...players.values()].find((p) => p.profile_id && p.profile_id === auth.profile?.id)?.id ?? null
+
+  const viewer: Viewer = {
+    isAdmin: admin,
+    isActivePlayer: auth.access === 'player' || auth.access === 'admin',
+    profileId: auth.profile?.id ?? null,
+    playerId: myPlayerId,
+  }
+  const openMatch = bundle.matches.find((m) => m.id === openMatchId)
 
   const tabs: { id: Tab; label: string }[] = [
     ...(tournament.status !== 'draft'
@@ -118,7 +128,7 @@ export function TournamentPage() {
 
       {tab === 'tableau' &&
         (hasMain ? (
-          <BracketView bundle={bundle} bracket="main" highlightPlayerId={myPlayerId} />
+          <BracketView bundle={bundle} bracket="main" highlightPlayerId={myPlayerId} onOpenMatch={setOpenMatchId} />
         ) : (
           <p className="rounded-2xl bg-white p-4 text-sm text-ink/70 shadow-sm">
             La phase finale sera construite à la fin des poules : {tournament.qualifiers_per_pool} qualifié(s) par
@@ -126,8 +136,20 @@ export function TournamentPage() {
             {tournament.qualifier_placement === 'classic' ? 'croisement classique' : 'tirage au sort'}.
           </p>
         ))}
-      {tab === 'poules' && <PoolsView bundle={bundle} highlightPlayerId={myPlayerId} />}
-      {tab === 'consolante' && <BracketView bundle={bundle} bracket="consolation" highlightPlayerId={myPlayerId} />}
+      {tab === 'poules' && <PoolsView bundle={bundle} highlightPlayerId={myPlayerId} onOpenMatch={setOpenMatchId} />}
+      {tab === 'consolante' && (
+        <BracketView bundle={bundle} bracket="consolation" highlightPlayerId={myPlayerId} onOpenMatch={setOpenMatchId} />
+      )}
+      {openMatch && (
+        <MatchDialog
+          key={openMatch.id}
+          bundle={bundle}
+          match={openMatch}
+          viewer={viewer}
+          onClose={() => setOpenMatchId(null)}
+          onSaved={reload}
+        />
+      )}
       {tab === 'joueurs' && (
         <ul className="grid gap-2 sm:grid-cols-2">
           {[...entries]

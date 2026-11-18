@@ -1,4 +1,5 @@
 import type { BracketKind } from '../../lib/draw/types.ts'
+import type { SetScore } from '../../lib/scores.ts'
 
 export type Discipline = 'mini_pong' | 'darts'
 export type TournamentFormat = 'knockout' | 'pools_knockout'
@@ -85,6 +86,11 @@ export type Match = {
   next_slot: 'home' | 'away' | null
   loser_next_match_id: string | null
   loser_next_slot: 'home' | 'away' | null
+  /** Auteur du résultat (profil), saisi par l'admin ?, 1re saisie et dernière modification. */
+  result_by: string | null
+  result_by_admin: boolean
+  result_first_at: string | null
+  result_at: string | null
 }
 
 /** Tout ce qu'il faut pour afficher un tournoi. */
@@ -95,6 +101,10 @@ export type TournamentBundle = {
   pools: Pool[]
   rounds: Round[]
   matches: Match[]
+  /** Scores des sets (mini-pong), par match, dans l'ordre. */
+  sets: Map<string, SetScore[]>
+  /** Noms des auteurs des résultats (non lisibles par les spectateurs). */
+  authors: Map<string, string>
 }
 
 export const DISCIPLINE_LABELS: Record<Discipline, string> = {

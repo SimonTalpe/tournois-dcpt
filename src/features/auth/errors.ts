@@ -35,6 +35,12 @@ const MESSAGES_BY_DB_ERROR: Record<string, string> = {
   ALREADY_ENTERED: 'Ce joueur est déjà inscrit au tournoi.',
   NOT_ENTERED: "Ce joueur n'est pas inscrit au tournoi.",
   INVALID_STATUS: 'Changement de statut impossible.',
+  NOT_MY_MATCH: 'Tu ne peux saisir que le résultat de tes propres matchs.',
+  MATCH_NOT_READY: 'Les deux joueurs de ce match ne sont pas encore connus.',
+  INVALID_SCORE: 'Score invalide : vérifie chaque set (11 points, 2 points d’écart).',
+  RESULT_LOCKED: 'Ce résultat ne peut plus être modifié par toi (délai de 5 minutes dépassé ou saisi par un autre) : contacte l’admin.',
+  NEXT_MATCH_PLAYED: 'Le match suivant a déjà été joué : efface d’abord son résultat pour changer le vainqueur de celui-ci.',
+  ROUND_LOCKED: 'Un match de ce tour a déjà été joué : son format de jeu ne peut plus changer.',
   NOT_NAME_ONLY: 'Ce joueur est déjà lié à un compte. Recharge la page.',
   MERGE_CONFLICT:
     "Ce compte et ce nom seul jouent dans un même tournoi : fusion impossible. Remplace d'abord l'un des deux dans ce tournoi.",
