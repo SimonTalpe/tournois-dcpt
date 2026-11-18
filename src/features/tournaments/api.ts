@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { buildLaunchDraw, type DrawConfig, type DrawResult } from '../../lib/draw/plan.ts'
+import type { SetScore } from '../../lib/scores.ts'
 import { supabase } from '../../lib/supabase.ts'
 import { translateError } from '../auth/errors.ts'
 import type {
@@ -48,13 +49,26 @@ export async function loadTournament(id: string): Promise<TournamentBundle | nul
     client
       .from('matches')
       .select(
-        'id, tournament_id, round_id, pool_id, position, home_player_id, away_player_id, winner_player_id, status, next_match_id, next_slot, loser_next_match_id, loser_next_slot',
+        'id, tournament_id, round_id, pool_id, position, home_player_id, away_player_id, winner_player_id, status, next_match_id, next_slot, loser_next_match_id, loser_next_slot, result_by, result_by_admin, result_first_at, result_at, match_sets(set_number, home_points, away_points)',
       )
       .eq('tournament_id', id)
       .order('position'),
   ])
   const entryRows = check(entries) as Entry[]
-  const matchRows = check(matches) as Match[]
+  type SetRow = { set_number: number; home_points: number; away_points: number }
+  const rawMatches = check(matches) as (Match & { match_sets: SetRow[] | null })[]
+  const sets = new Map<string, SetScore[]>()
+  const matchRows: Match[] = rawMatches.map(({ match_sets, ...match }) => {
+    if (match_sets?.length) {
+      sets.set(
+        match.id,
+        [...match_sets]
+          .sort((a, b) => a.set_number - b.set_number)
+          .map((row) => ({ home: row.home_points, away: row.away_points })),
+      )
+    }
+    return match
+  })
   const playerIds = new Set<string>(entryRows.map((e) => e.player_id))
   for (const m of matchRows) {
     for (const p of [m.home_player_id, m.away_player_id, m.winner_player_id]) if (p) playerIds.add(p)
@@ -62,9 +76,16 @@ export async function loadTournament(id: string): Promise<TournamentBundle | nul
   const players = playerIds.size
     ? (check(await client.from('players').select('id, profile_id, full_name').in('id', [...playerIds])) as Player[])
     : []
+  // Auteurs des résultats : les spectateurs ne lisent pas les profils (liste vide, sans erreur).
+  const authorIds = [...new Set(matchRows.map((m) => m.result_by).filter((id): id is string => Boolean(id)))]
+  const authorRows = authorIds.length
+    ? ((await client.from('profiles').select('id, full_name').in('id', authorIds)).data ?? [])
+    : []
   return {
     tournament,
     entries: entryRows,
+    sets,
+    authors: new Map((authorRows as { id: string; full_name: string }[]).map((p) => [p.id, p.full_name])),
     players: new Map(players.map((p) => [p.id, p])),
     pools: check(pools) as Pool[],
     rounds: check(rounds) as Round[],
@@ -270,4 +291,24 @@ export async function updateRoundFormat(
   format: Pick<Round, 'sets_to_win' | 'dart_start'>,
 ): Promise<void> {
   check(await db().from('tournament_rounds').update(format).eq('id', roundId))
+}
+
+// ---------------------------------------------------------------- Résultats
+
+/** Saisie ou correction d'un résultat. Mini-pong : sets ; fléchettes : vainqueur. */
+export async function submitResult(
+  matchId: string,
+  result: { sets: SetScore[] } | { winnerPlayerId: string },
+): Promise<void> {
+  check(
+    await db().rpc('submit_match_result', {
+      p_match_id: matchId,
+      p_winner_player_id: 'winnerPlayerId' in result ? result.winnerPlayerId : null,
+      p_sets: 'sets' in result ? result.sets : null,
+    }),
+  )
+}
+
+export async function clearResult(matchId: string): Promise<void> {
+  check(await db().rpc('clear_match_result', { p_match_id: matchId }))
 }

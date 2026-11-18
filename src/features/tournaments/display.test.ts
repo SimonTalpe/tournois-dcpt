@@ -26,6 +26,10 @@ const match = (id: string, round_id: string, position: number, extra: Partial<Ma
   next_slot: null,
   loser_next_match_id: null,
   loser_next_slot: null,
+  result_by: null,
+  result_by_admin: false,
+  result_first_at: null,
+  result_at: null,
   ...extra,
 })
 

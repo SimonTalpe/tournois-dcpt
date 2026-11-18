@@ -7,6 +7,7 @@ type Props = {
   bundle: TournamentBundle
   bracket: 'main' | 'consolation'
   highlightPlayerId?: string | null
+  onOpenMatch?: (matchId: string) => void
 }
 
 /**
@@ -14,7 +15,7 @@ type Props = {
  * Les matchs d'une colonne sont espacés pour s'aligner sur ceux du tour précédent.
  * Le match pour la 3e place est affiché sous la finale du tableau principal.
  */
-export function BracketView({ bundle, bracket, highlightPlayerId }: Props) {
+export function BracketView({ bundle, bracket, highlightPlayerId, onOpenMatch }: Props) {
   const { rounds, matches, players, tournament } = bundle
   const numbers = useMemo(() => numberMatches(rounds, matches), [rounds, matches])
   const sources = useMemo(() => slotSources(matches), [matches])
@@ -59,6 +60,9 @@ export function BracketView({ bundle, bracket, highlightPlayerId }: Props) {
                       numbers={numbers}
                       sources={sources}
                       highlightPlayerId={highlightPlayerId}
+                      discipline={tournament.discipline}
+                      sets={bundle.sets.get(match.id)}
+                      onOpen={onOpenMatch}
                     />
                   </div>
                 ))}
@@ -76,6 +80,9 @@ export function BracketView({ bundle, bracket, highlightPlayerId }: Props) {
                         numbers={numbers}
                         sources={sources}
                         highlightPlayerId={highlightPlayerId}
+                        discipline={tournament.discipline}
+                        sets={bundle.sets.get(match.id)}
+                        onOpen={onOpenMatch}
                       />
                     ))}
                 </div>

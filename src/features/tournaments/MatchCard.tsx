@@ -1,5 +1,6 @@
+import { setsWon, type SetScore } from '../../lib/scores.ts'
 import { placeholderLabel, type SlotSource } from './display.ts'
-import type { Match, Player } from './types.ts'
+import type { Discipline, Match, Player } from './types.ts'
 
 type Props = {
   match: Match
@@ -8,12 +9,19 @@ type Props = {
   sources: Map<string, SlotSource>
   /** Participant à mettre en valeur (le joueur connecté). */
   highlightPlayerId?: string | null
+  discipline: Discipline
+  /** Scores des sets (mini-pong). */
+  sets?: SetScore[]
+  /** Ouvre le détail du match (saisie du résultat). */
+  onOpen?: (matchId: string) => void
 }
 
 /** Carte d'un match : deux lignes domicile / extérieur, ou attente « Vainqueur M3 ». */
-export function MatchCard({ match, players, numbers, sources, highlightPlayerId }: Props) {
+export function MatchCard({ match, players, numbers, sources, highlightPlayerId, discipline, sets, onOpen }: Props) {
   const number = numbers.get(match.id)
   const isBye = match.status === 'bye'
+  const played = match.status === 'played'
+  const won = played && sets?.length ? setsWon(sets) : null
 
   const row = (slot: 'home' | 'away') => {
     const playerId = slot === 'home' ? match.home_player_id : match.away_player_id
@@ -37,27 +45,36 @@ export function MatchCard({ match, players, numbers, sources, highlightPlayerId 
             {placeholderLabel(sources.get(`${match.id}:${slot}`), numbers)}
           </span>
         )}
-        {slot === 'home' && !isBye && <span className="shrink-0 text-[10px] text-ink/40 uppercase">dom.</span>}
+        <span className="flex shrink-0 items-center gap-1.5">
+          {slot === 'home' && !isBye && <span className="text-[10px] text-ink/40 uppercase">dom.</span>}
+          {won && <span className="w-4 text-center tabular-nums">{won[slot]}</span>}
+          {played && discipline === 'darts' && isWinner && <span aria-label="vainqueur">✓</span>}
+        </span>
       </div>
     )
   }
 
+  const clickable = Boolean(onOpen && !isBye && (played || (match.home_player_id && match.away_player_id)))
+  const Tag = clickable ? 'button' : 'div'
   return (
-    <div
-      className={`w-full overflow-hidden rounded-lg border bg-white shadow-sm ${
+    <Tag
+      {...(clickable ? { type: 'button' as const, onClick: () => onOpen?.(match.id) } : {})}
+      className={`block w-full overflow-hidden rounded-lg border bg-white text-left shadow-sm ${
         isBye ? 'border-dashed border-ink/20' : 'border-ink/15'
-      }`}
+      } ${clickable ? 'transition hover:border-court/50 hover:shadow' : ''}`}
     >
       {number && (
         <div className="flex items-center justify-between bg-court/5 px-2.5 py-0.5 text-[11px] text-ink/50">
           <span>M{number}</span>
           {isBye && <span>qualifié d'office</span>}
+          {clickable && !played && <span className="text-court">à jouer ›</span>}
+          {played && <span>joué</span>}
         </div>
       )}
       <div className="divide-y divide-ink/10">
         {row('home')}
         {row('away')}
       </div>
-    </div>
+    </Tag>
   )
 }
