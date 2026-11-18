@@ -1,26 +1,41 @@
-import { Link, NavLink, Outlet } from 'react-router'
+import { Link, NavLink, Outlet, useNavigate } from 'react-router'
+import { isAdmin, isPlayer, useAuth } from '../features/auth/AuthContext.ts'
 
 const NAV_ITEMS = [
-  { to: '/accueil', label: 'Accueil', icon: '🏠' },
-  { to: '/tournois', label: 'Tournois', icon: '🏆' },
-  { to: '/annonces', label: 'Annonces', icon: '📣' },
-  { to: '/regles', label: 'Règles', icon: '📖' },
-  { to: '/profil', label: 'Profil', icon: '👤' },
+  { to: '/accueil', label: 'Accueil', icon: '🏠', playersOnly: false },
+  { to: '/tournois', label: 'Tournois', icon: '🏆', playersOnly: false },
+  { to: '/annonces', label: 'Annonces', icon: '📣', playersOnly: false },
+  { to: '/regles', label: 'Règles', icon: '📖', playersOnly: false },
+  { to: '/profil', label: 'Profil', icon: '👤', playersOnly: true },
 ] as const
 
 /** Mise en page commune : en-tête, menu en haut sur ordinateur, barre en bas sur mobile. */
 export function AppLayout() {
+  const auth = useAuth()
+  const navigate = useNavigate()
+  const items = NAV_ITEMS.filter((item) => !item.playersOnly || isPlayer(auth))
+  const who = auth.demoMode
+    ? 'Maquette'
+    : auth.access === 'spectator'
+      ? '👀 Spectateur'
+      : (auth.profile?.full_name ?? '')
+
+  async function handleSignOut() {
+    await auth.signOut()
+    navigate('/', { replace: true })
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-10 bg-court text-chalk shadow">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
-          <Link to="/accueil" className="flex items-center gap-2 font-bold">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
+          <Link to="/accueil" className="flex shrink-0 items-center gap-2 font-bold">
             <img src="/favicon.svg" alt="" className="h-8 w-8" />
-            <span className="hidden sm:inline">Mini-pong et fléchettes</span>
-            <span className="sm:hidden">MPF</span>
+            <span className="hidden lg:inline">Mini-pong et fléchettes</span>
+            <span className="lg:hidden">MPF</span>
           </Link>
           <nav className="hidden gap-1 md:flex" aria-label="Menu principal">
-            {NAV_ITEMS.map((item) => (
+            {items.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
@@ -34,6 +49,31 @@ export function AppLayout() {
               </NavLink>
             ))}
           </nav>
+          <div className="flex min-w-0 items-center gap-2 text-sm">
+            <span className="truncate text-chalk/80" title={who}>
+              {who}
+            </span>
+            {isAdmin(auth) && (
+              <NavLink
+                to="/admin"
+                className={({ isActive }) =>
+                  `shrink-0 rounded-lg px-2 py-1.5 font-medium ${isActive ? 'bg-ball text-court' : 'hover:bg-court-light'}`
+                }
+                aria-label="Administration"
+              >
+                ⚙️<span className="hidden sm:inline"> Admin</span>
+              </NavLink>
+            )}
+            {!auth.demoMode && (
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="shrink-0 rounded-lg border border-chalk/40 px-2 py-1.5 hover:bg-court-light"
+              >
+                {auth.access === 'spectator' ? 'Quitter' : 'Déconnexion'}
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -42,10 +82,12 @@ export function AppLayout() {
       </main>
 
       <nav
-        className="fixed inset-x-0 bottom-0 z-10 grid grid-cols-5 border-t border-court/20 bg-white pb-[env(safe-area-inset-bottom)] md:hidden"
+        className={`fixed inset-x-0 bottom-0 z-10 grid border-t border-court/20 bg-white pb-[env(safe-area-inset-bottom)] md:hidden ${
+          items.length === 5 ? 'grid-cols-5' : 'grid-cols-4'
+        }`}
         aria-label="Menu principal"
       >
-        {NAV_ITEMS.map((item) => (
+        {items.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}

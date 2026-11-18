@@ -1,7 +1,12 @@
-import { Link } from 'react-router'
+import { Link, Navigate } from 'react-router'
+import { canViewSite, useAuth } from '../features/auth/AuthContext.ts'
 
 /** Écran d'entrée : deux choix, « Jouer » (connexion) ou « Regarder » (code spectateur). */
 export function EntryPage() {
+  const auth = useAuth()
+  // Déjà connecté (joueur) ou spectateur : directement sur l'accueil.
+  if (!auth.demoMode && !auth.loading && canViewSite(auth)) return <Navigate to="/accueil" replace />
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-10 bg-court px-6 py-12 text-chalk">
       <div className="flex flex-col items-center gap-4 text-center">

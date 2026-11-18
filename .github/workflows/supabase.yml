@@ -1,0 +1,74 @@
+name: Déploiement Supabase
+
+# Après chaque fusion sur main : applique les migrations, déploie les Edge Functions
+# et les réglages d'authentification (emails en français, code à 6 chiffres…).
+# Inactif tant que la variable SUPABASE_PROJECT_REF n'est pas définie dans GitHub.
+#
+# Réglages GitHub nécessaires (Settings → Secrets and variables → Actions) :
+#   variable SUPABASE_PROJECT_REF   : identifiant du projet (ex. fvhplztdwezndiziwhiu)
+#   variable SITE_URL               : https://mini-pong-flechettes.pages.dev
+#   secret   SUPABASE_ACCESS_TOKEN  : jeton personnel Supabase (Account → Access Tokens)
+#   secret   SUPABASE_DB_PASSWORD   : mot de passe de la base choisi à la création du projet
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/supabase.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: supabase-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: ${{ vars.SUPABASE_PROJECT_REF != '' }}
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      SITE_URL: ${{ vars.SITE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Liaison au projet
+        run: supabase link --project-ref "$PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Migrations
+        run: supabase db push --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Edge Functions
+        run: supabase functions deploy --project-ref "$PROJECT_REF"
+
+      - name: Réglages d'authentification et modèles d'emails
+        run: |
+          jq -n \
+            --arg site_url "$SITE_URL" \
+            --rawfile confirmation supabase/templates/confirmation.html \
+            --rawfile recovery supabase/templates/recovery.html \
+            '{
+              site_url: $site_url,
+              uri_allow_list: ($site_url + "/**,https://*.mini-pong-flechettes.pages.dev/**"),
+              disable_signup: false,
+              mailer_autoconfirm: false,
+              mailer_otp_length: 6,
+              mailer_otp_exp: 3600,
+              password_min_length: 8,
+              external_anonymous_users_enabled: true,
+              mailer_subjects_confirmation: "Ton code d’activation – Mini-pong et fléchettes",
+              mailer_templates_confirmation_content: $confirmation,
+              mailer_subjects_recovery: "Ton code pour changer de mot de passe – Mini-pong et fléchettes",
+              mailer_templates_recovery_content: $recovery
+            }' > auth-config.json
+          curl --fail-with-body -sS -X PATCH \
+            "https://api.supabase.com/v1/projects/$PROJECT_REF/config/auth" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data @auth-config.json > /dev/null
+          echo "Réglages d'authentification appliqués."
