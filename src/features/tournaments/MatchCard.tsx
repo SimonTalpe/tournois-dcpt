@@ -1,3 +1,4 @@
+import { formatSchedule } from '../../lib/schedule.ts'
 import { setsWon, type SetScore } from '../../lib/scores.ts'
 import { placeholderLabel, type SlotSource } from './display.ts'
 import type { Discipline, Match, Player } from './types.ts'
@@ -14,10 +15,22 @@ type Props = {
   sets?: SetScore[]
   /** Ouvre le détail du match (saisie du résultat). */
   onOpen?: (matchId: string) => void
+  /** Nom du lieu du match, s'il est fixé. */
+  locationName?: string
 }
 
 /** Carte d'un match : deux lignes domicile / extérieur, ou attente « Vainqueur M3 ». */
-export function MatchCard({ match, players, numbers, sources, highlightPlayerId, discipline, sets, onOpen }: Props) {
+export function MatchCard({
+  match,
+  players,
+  numbers,
+  sources,
+  highlightPlayerId,
+  discipline,
+  sets,
+  onOpen,
+  locationName,
+}: Props) {
   const number = numbers.get(match.id)
   const isBye = match.status === 'bye'
   const played = match.status === 'played'
@@ -75,6 +88,13 @@ export function MatchCard({ match, players, numbers, sources, highlightPlayerId,
         {row('home')}
         {row('away')}
       </div>
+      {match.status === 'pending' && (match.scheduled_at || locationName) && (
+        <div className="truncate border-t border-ink/10 bg-ball/20 px-2.5 py-0.5 text-[11px] text-ink/70">
+          {match.scheduled_at && formatSchedule(match.scheduled_at)}
+          {match.scheduled_at && locationName && ' · '}
+          {locationName}
+        </div>
+      )}
     </Tag>
   )
 }

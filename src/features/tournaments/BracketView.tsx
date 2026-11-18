@@ -19,6 +19,7 @@ export function BracketView({ bundle, bracket, highlightPlayerId, onOpenMatch }:
   const { rounds, matches, players, tournament } = bundle
   const numbers = useMemo(() => numberMatches(rounds, matches), [rounds, matches])
   const sources = useMemo(() => slotSources(matches), [matches])
+  const locationNames = useMemo(() => new Map(bundle.locations.map((l) => [l.id, l.name])), [bundle.locations])
   const bracketRounds = sortRounds(rounds).filter((r) => r.bracket === bracket)
   const thirdPlace = bracket === 'main' ? rounds.find((r) => r.bracket === 'third_place') : undefined
 
@@ -63,6 +64,7 @@ export function BracketView({ bundle, bracket, highlightPlayerId, onOpenMatch }:
                       discipline={tournament.discipline}
                       sets={bundle.sets.get(match.id)}
                       onOpen={onOpenMatch}
+                      locationName={locationNames.get(match.location_id ?? '')}
                     />
                   </div>
                 ))}
@@ -83,6 +85,7 @@ export function BracketView({ bundle, bracket, highlightPlayerId, onOpenMatch }:
                         discipline={tournament.discipline}
                         sets={bundle.sets.get(match.id)}
                         onOpen={onOpenMatch}
+                      locationName={locationNames.get(match.location_id ?? '')}
                       />
                     ))}
                 </div>

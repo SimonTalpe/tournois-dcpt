@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { SecondaryButton } from '../../components/ui.tsx'
+import { formatSchedule } from '../../lib/schedule.ts'
 import { setsWon } from '../../lib/scores.ts'
 import { groupKey } from '../../lib/standings.ts'
 import type { Viewer } from './MatchDialog.tsx'
@@ -198,6 +199,16 @@ export function PoolsView({ bundle, highlightPlayerId, onOpenMatch, viewer, onSa
                             {name(m.away_player_id)}
                           </span>
                         </button>
+                        {m.status === 'pending' && (m.scheduled_at || m.location_id) && (
+                          <p className="pb-1 text-center text-[11px] text-ink/60">
+                            {[
+                              m.scheduled_at && formatSchedule(m.scheduled_at),
+                              bundle.locations.find((l) => l.id === m.location_id)?.name,
+                            ]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </p>
+                        )}
                       </li>
                     )
                   })}

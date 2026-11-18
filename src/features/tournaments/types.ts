@@ -91,7 +91,12 @@ export type Match = {
   result_by_admin: boolean
   result_first_at: string | null
   result_at: string | null
+  /** Horaire (instant UTC, saisi en heure de Paris) et lieu. */
+  scheduled_at: string | null
+  location_id: string | null
 }
+
+export type Location = { id: string; name: string }
 
 /** Départage de poule : classement complet d'un groupe de joueurs à égalité. */
 export type PoolTiebreak = {
@@ -116,6 +121,7 @@ export type TournamentBundle = {
   /** Scores des sets (mini-pong), par match, dans l'ordre. */
   sets: Map<string, SetScore[]>
   tiebreaks: PoolTiebreak[]
+  locations: Location[]
   /** Noms des auteurs des résultats (non lisibles par les spectateurs). */
   authors: Map<string, string>
 }
