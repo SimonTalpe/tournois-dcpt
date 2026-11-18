@@ -1,0 +1,63 @@
+import { placeholderLabel, type SlotSource } from './display.ts'
+import type { Match, Player } from './types.ts'
+
+type Props = {
+  match: Match
+  players: Map<string, Player>
+  numbers: Map<string, number>
+  sources: Map<string, SlotSource>
+  /** Participant à mettre en valeur (le joueur connecté). */
+  highlightPlayerId?: string | null
+}
+
+/** Carte d'un match : deux lignes domicile / extérieur, ou attente « Vainqueur M3 ». */
+export function MatchCard({ match, players, numbers, sources, highlightPlayerId }: Props) {
+  const number = numbers.get(match.id)
+  const isBye = match.status === 'bye'
+
+  const row = (slot: 'home' | 'away') => {
+    const playerId = slot === 'home' ? match.home_player_id : match.away_player_id
+    const isMe = Boolean(playerId && playerId === highlightPlayerId)
+    const isWinner = Boolean(playerId && playerId === match.winner_player_id && !isBye)
+    if (isBye && slot === 'away') {
+      return <div className="px-2.5 py-1.5 text-xs text-ink/40 italic">Exempt</div>
+    }
+    return (
+      <div
+        className={`flex items-center justify-between gap-2 px-2.5 py-1.5 text-sm ${isMe ? 'bg-ball/40' : ''} ${
+          isWinner ? 'font-bold' : ''
+        }`}
+      >
+        {playerId ? (
+          <span className="truncate" title={players.get(playerId)?.full_name}>
+            {players.get(playerId)?.full_name ?? 'Joueur inconnu'}
+          </span>
+        ) : (
+          <span className="truncate text-ink/40 italic">
+            {placeholderLabel(sources.get(`${match.id}:${slot}`), numbers)}
+          </span>
+        )}
+        {slot === 'home' && !isBye && <span className="shrink-0 text-[10px] text-ink/40 uppercase">dom.</span>}
+      </div>
+    )
+  }
+
+  return (
+    <div
+      className={`w-full overflow-hidden rounded-lg border bg-white shadow-sm ${
+        isBye ? 'border-dashed border-ink/20' : 'border-ink/15'
+      }`}
+    >
+      {number && (
+        <div className="flex items-center justify-between bg-court/5 px-2.5 py-0.5 text-[11px] text-ink/50">
+          <span>M{number}</span>
+          {isBye && <span>qualifié d'office</span>}
+        </div>
+      )}
+      <div className="divide-y divide-ink/10">
+        {row('home')}
+        {row('away')}
+      </div>
+    </div>
+  )
+}
