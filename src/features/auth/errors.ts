@@ -53,7 +53,6 @@ const MESSAGES_BY_CONSTRAINT: Record<string, string> = {
 const MESSAGES_BY_SQLSTATE: Record<string, string> = {
   '42501': "La base a refusé l'opération : droits insuffisants (es-tu toujours connecté en admin ?).",
   '23505': 'Cet élément existe déjà.',
-  '23503': "Impossible : cet élément est encore utilisé ailleurs (ex. joueur inscrit à un tournoi).",
   '23514': 'Une valeur saisie ne respecte pas les règles de la base.',
   '23502': 'Un champ obligatoire est vide.',
   '22P02': 'Une valeur saisie a un format invalide.',
@@ -79,6 +78,12 @@ export function translateError(error: ErrorLike): string {
     if (message.includes(constraint)) return text
   }
   if (/permission denied/i.test(message)) return MESSAGES_BY_SQLSTATE['42501']
+  // Clé étrangère : suppression d'un élément encore utilisé, ou référence à un élément disparu.
+  if (error.code === '23503' || /foreign key constraint/i.test(message)) {
+    return /update or delete on table/i.test(message)
+      ? 'Impossible : cet élément est encore utilisé ailleurs (ex. joueur inscrit à un tournoi).'
+      : 'Élément introuvable (supprimé entre-temps ?). Recharge la page.'
+  }
   if (error.code && MESSAGES_BY_SQLSTATE[error.code]) return MESSAGES_BY_SQLSTATE[error.code]
   // Erreur imprévue : on affiche le détail technique pour pouvoir la signaler.
   if (message) return `${GENERIC_ERROR} (détail : ${message})`
