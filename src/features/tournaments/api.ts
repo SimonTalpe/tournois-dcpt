@@ -51,7 +51,7 @@ export async function loadTournament(id: string): Promise<TournamentBundle | nul
     client
       .from('matches')
       .select(
-        'id, tournament_id, round_id, pool_id, position, home_player_id, away_player_id, winner_player_id, status, next_match_id, next_slot, loser_next_match_id, loser_next_slot, result_by, result_by_admin, result_first_at, result_at, scheduled_at, location_id, match_sets(set_number, home_points, away_points)',
+        'id, tournament_id, round_id, pool_id, position, home_player_id, away_player_id, winner_player_id, status, next_match_id, next_slot, loser_next_match_id, loser_next_slot, result_by, result_by_admin, result_first_at, result_at, scheduled_at, location_id, forfeit_player_id, match_sets(set_number, home_points, away_points)',
       )
       .eq('tournament_id', id)
       .order('position'),
@@ -378,4 +378,41 @@ export async function renameLocation(id: string, name: string): Promise<void> {
 
 export async function deleteLocation(id: string): Promise<void> {
   check(await db().from('locations').delete().eq('id', id))
+}
+
+// ---------------------------------------------------------------- Forfaits, annulations (admin)
+
+export async function setWalkover(matchId: string, forfeitPlayerId: string): Promise<void> {
+  check(await db().rpc('admin_set_walkover', { p_match_id: matchId, p_forfeit_player_id: forfeitPlayerId }))
+}
+
+/** Annulation d'un match de poule (ignoré du classement). */
+export async function cancelMatch(matchId: string): Promise<void> {
+  check(await db().rpc('admin_cancel_match', { p_match_id: matchId }))
+}
+
+/** Un forfait ou une annulation redevient un match à jouer. */
+export async function reopenMatch(matchId: string): Promise<void> {
+  check(await db().rpc('admin_reopen_match', { p_match_id: matchId }))
+}
+
+/** Forfait d'un joueur sur tous ses matchs non joués du tournoi. Renvoie le nombre de matchs concernés. */
+export async function forfeitPlayer(tournamentId: string, playerId: string): Promise<number> {
+  return check(
+    await db().rpc('admin_forfeit_player', { p_tournament_id: tournamentId, p_player_id: playerId }),
+  ) as number
+}
+
+export type DisabledPlayerPending = {
+  tournament_id: string
+  tournament_name: string
+  player_id: string
+  profile_id: string
+  full_name: string
+  pending_matches: number
+}
+
+/** Comptes désactivés qui ont encore des matchs à jouer dans un tournoi en cours. */
+export async function listDisabledPlayersWithPendingMatches(): Promise<DisabledPlayerPending[]> {
+  return check(await db().rpc('admin_disabled_players_with_pending_matches')) as DisabledPlayerPending[]
 }

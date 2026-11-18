@@ -94,6 +94,8 @@ export type Match = {
   /** Horaire (instant UTC, saisi en heure de Paris) et lieu. */
   scheduled_at: string | null
   location_id: string | null
+  /** Joueur déclaré forfait (statut walkover). */
+  forfeit_player_id: string | null
 }
 
 export type Location = { id: string; name: string }

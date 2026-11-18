@@ -48,6 +48,11 @@ const stats = {
   finalPhaseResets: 0,
   refusals: 0,
   replacements: 0,
+  walkovers: 0,
+  walkoversAwaitingOpponent: 0,
+  cancellations: 0,
+  reopenings: 0,
+  playerForfeits: 0,
 }
 
 class Failure extends Error {}
@@ -66,6 +71,7 @@ async function as<T = unknown>(userId: string, sql: string, params: unknown[] = 
     return result.rows as T[]
   } catch (e) {
     await client.query('rollback')
+    ;(e as Error).message += ` [${sql.trim().split('\n')[0].slice(0, 60)}]`
     throw e
   }
 }
@@ -191,10 +197,11 @@ async function submit(actor: string, match: Match, discipline: string, setsToWin
 
 /** Vérifie l'avancement d'un match joué : vainqueur et perdant à leur place (exempts de consolante compris). */
 async function checkAdvancement(matchId: string) {
-  const [m] = await su<Match>(`select * from public.matches where id = $1`, [matchId])
-  assert(m.status === 'played' && m.winner_player_id, `match ${matchId} sans vainqueur`)
+  const [m] = await su<Match & { forfeit_player_id: string | null }>(`select * from public.matches where id = $1`, [matchId])
+  assert((m.status === 'played' || m.status === 'walkover') && m.winner_player_id, `match ${matchId} sans vainqueur`)
   assert([m.home_player_id, m.away_player_id].includes(m.winner_player_id), 'vainqueur hors du match')
   const loser = m.winner_player_id === m.home_player_id ? m.away_player_id : m.home_player_id
+  if (m.status === 'walkover') assert(m.forfeit_player_id === loser, 'forfait : le perdant n’est pas le joueur forfait')
   for (const [target, slot, player] of [
     [m.next_match_id, m.next_slot, m.winner_player_id],
     [m.loser_next_match_id, m.loser_next_slot, loser],
@@ -202,8 +209,8 @@ async function checkAdvancement(matchId: string) {
     if (!target) continue
     const [t] = await su<Match>(`select * from public.matches where id = $1`, [target])
     assert(t[`${slot}_player_id` as 'home_player_id'] === player, `avancement incorrect vers ${t.plan_key ?? target}`)
-    if (t.status === 'bye') {
-      assert(t.winner_player_id === player, 'exempt de consolante : joueur non qualifié d’office')
+    if (t.status === 'bye' || t.status === 'walkover') {
+      assert(t.winner_player_id === player, `${t.status} : joueur arrivé non qualifié d’office`)
       if (t.next_match_id) {
         const [n] = await su<Match>(`select * from public.matches where id = $1`, [t.next_match_id])
         assert(n[`${t.next_slot}_player_id` as 'home_player_id'] === player, 'exempt de consolante : joueur non avancé')
@@ -349,6 +356,51 @@ async function playTournament(index: number) {
       ])
       stats.schedules++
     }
+    // Forfait (admin) sur un match en attente d'un adversaire : qualifié d'office à son arrivée.
+    const waiting = bundle.matches.filter(
+      (m) => m.status === 'pending' && Boolean(m.home_player_id) !== Boolean(m.away_player_id),
+    )
+    if (waiting.length && chance(0.04)) {
+      const w = pick(waiting)
+      await as(ADMIN, `select public.admin_set_walkover($1, $2)`, [w.id, w.home_player_id ?? w.away_player_id])
+      stats.walkoversAwaitingOpponent++
+      continue
+    }
+    // Forfait d'un joueur sur tous ses matchs non joués (compte désactivé non remplacé).
+    if (chance(0.01)) {
+      const forfeiter = pick([match.home_player_id, match.away_player_id] as string[])
+      const n = await as<{ admin_forfeit_player: number }>(ADMIN, `select public.admin_forfeit_player($1, $2)`, [
+        tournamentId,
+        forfeiter,
+      ])
+      assert(n[0].admin_forfeit_player >= 1, 'forfait global sans effet')
+      const left = await su(
+        `select 1 from public.matches where tournament_id = $1 and status = 'pending' and $2 in (home_player_id, away_player_id)
+           and not (pool_id is not null and public.has_final_phase(tournament_id))`,
+        [tournamentId, forfeiter],
+      )
+      assert(left.length === 0, 'forfait global : il reste des matchs à jouer')
+      stats.playerForfeits++
+      continue
+    }
+    // Forfait d'un joueur sur ce match, ou annulation (poules), puis parfois rétablissement.
+    if (chance(0.06)) {
+      const cancel = Boolean(match.pool_id) && chance(0.4)
+      if (cancel) {
+        await as(ADMIN, `select public.admin_cancel_match($1)`, [match.id])
+        stats.cancellations++
+      } else {
+        await as(ADMIN, `select public.admin_set_walkover($1, $2)`, [match.id, pick([match.home_player_id, match.away_player_id])])
+        stats.walkovers++
+        await checkAdvancement(match.id)
+      }
+      if (chance(0.25)) {
+        await as(ADMIN, `select public.admin_reopen_match($1)`, [match.id])
+        stats.reopenings++
+      }
+      continue
+    }
+
     // Remplacement d'un joueur en cours de tournoi (ses matchs joués restent à son nom).
     if (chance(0.03)) {
       const replaced = pick([match.home_player_id, match.away_player_id] as string[])
@@ -418,8 +470,9 @@ async function playTournament(index: number) {
   const end = await loadBundle(tournamentId)
   const roundOf = new Map(end.rounds.map((r) => [r.id, r]))
   for (const m of end.matches) {
-    assert(m.status === 'played' || m.status === 'bye', `${label} : match resté « ${m.status} »`)
-    if (m.status === 'bye') assert(m.winner_player_id, `${label} : exempt sans qualifié`)
+    assert(['played', 'bye', 'walkover', 'cancelled'].includes(m.status), `${label} : match resté « ${m.status} »`)
+    if (m.status !== 'cancelled') assert(m.winner_player_id, `${label} : match « ${m.status} » sans vainqueur`)
+    if (m.status === 'cancelled') assert(m.pool_id, `${label} : match de tableau annulé`)
   }
   const main = end.rounds.filter((r) => r.bracket === 'main')
   const lastMain = main.reduce((a, b) => (a.round_number > b.round_number ? a : b))
@@ -427,7 +480,9 @@ async function playTournament(index: number) {
   assert(finals.length === 1 && finals[0].winner_player_id, `${label} : pas de champion`)
   // Tableau principal : chaque joueur perd au plus une fois ; le champion ne perd jamais.
   const mainLosses = new Map<string, number>()
-  for (const m of end.matches.filter((x) => roundOf.get(x.round_id)?.bracket === 'main' && x.status === 'played')) {
+  for (const m of end.matches.filter(
+    (x) => roundOf.get(x.round_id)?.bracket === 'main' && (x.status === 'played' || x.status === 'walkover'),
+  )) {
     const loser = m.winner_player_id === m.home_player_id ? m.away_player_id : m.home_player_id
     mainLosses.set(loser as string, (mainLosses.get(loser as string) ?? 0) + 1)
   }
@@ -447,7 +502,7 @@ async function playTournament(index: number) {
   if (format === 'pools_knockout') {
     for (const { pool, result } of poolStandings(end)) {
       const ranked = new Set(result.rows.map((r) => r.playerId))
-      const poolMatches = end.matches.filter((m) => m.pool_id === pool.id && m.status === 'played')
+      const poolMatches = end.matches.filter((m) => m.pool_id === pool.id && (m.status === 'played' || m.status === 'walkover'))
       const expectedWins = poolMatches.filter((m) => ranked.has(m.winner_player_id as string)).length
       const expectedPlayed = poolMatches.reduce(
         (n, m) => n + (ranked.has(m.home_player_id as string) ? 1 : 0) + (ranked.has(m.away_player_id as string) ? 1 : 0),
@@ -458,7 +513,9 @@ async function playTournament(index: number) {
     }
   }
   // Format de jeu verrouillé sur les tours joués.
-  const playedRound = end.rounds.find((r) => end.matches.some((m) => m.round_id === r.id && m.status === 'played'))
+  const playedRound = end.rounds.find((r) =>
+    end.matches.some((m) => m.round_id === r.id && (m.status === 'played' || m.status === 'walkover')),
+  )
   if (playedRound) {
     await expectRefusal(
       as(ADMIN, `update public.tournament_rounds set dart_start = case dart_start when 301 then 501 else 301 end where id = $1`, [

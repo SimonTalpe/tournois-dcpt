@@ -34,6 +34,7 @@ export function MatchCard({
   const number = numbers.get(match.id)
   const isBye = match.status === 'bye'
   const played = match.status === 'played'
+  const isWalkover = match.status === 'walkover'
   const won = played && sets?.length ? setsWon(sets) : null
 
   const row = (slot: 'home' | 'away') => {
@@ -62,12 +63,17 @@ export function MatchCard({
           {slot === 'home' && !isBye && <span className="text-[10px] text-ink/40 uppercase">dom.</span>}
           {won && <span className="w-4 text-center tabular-nums">{won[slot]}</span>}
           {played && discipline === 'darts' && isWinner && <span aria-label="vainqueur">✓</span>}
+          {isWalkover && playerId && playerId === match.forfeit_player_id && (
+            <span className="text-[10px] font-semibold text-clay uppercase">forfait</span>
+          )}
         </span>
       </div>
     )
   }
 
-  const clickable = Boolean(onOpen && !isBye && (played || (match.home_player_id && match.away_player_id)))
+  const clickable = Boolean(
+    onOpen && !isBye && (played || isWalkover || match.home_player_id || match.away_player_id),
+  )
   const Tag = clickable ? 'button' : 'div'
   return (
     <Tag
@@ -80,8 +86,9 @@ export function MatchCard({
         <div className="flex items-center justify-between bg-court/5 px-2.5 py-0.5 text-[11px] text-ink/50">
           <span>M{number}</span>
           {isBye && <span>qualifié d'office</span>}
-          {clickable && !played && <span className="text-court">à jouer ›</span>}
+          {clickable && match.status === 'pending' && <span className="text-court">à jouer ›</span>}
           {played && <span>joué</span>}
+          {isWalkover && <span className="text-clay">forfait</span>}
         </div>
       )}
       <div className="divide-y divide-ink/10">

@@ -105,6 +105,7 @@ export function resultRights(
   if (!(tournamentStatus === 'in_progress' || (viewer.isAdmin && tournamentStatus === 'finished'))) {
     return { canEdit: false, reason: 'Le tournoi n’est pas en cours.' }
   }
+  if (match.status === 'walkover' || match.status === 'cancelled') return { canEdit: false, reason: null }
   if (match.poolLocked) {
     return { canEdit: false, reason: 'Phase finale générée : les résultats de poule sont figés.' }
   }

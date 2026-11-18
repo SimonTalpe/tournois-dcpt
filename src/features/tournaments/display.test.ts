@@ -32,6 +32,7 @@ const match = (id: string, round_id: string, position: number, extra: Partial<Ma
   result_at: null,
   scheduled_at: null,
   location_id: null,
+  forfeit_player_id: null,
   ...extra,
 })
 

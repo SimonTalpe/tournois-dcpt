@@ -31,6 +31,14 @@ export function PoolsView({ bundle, highlightPlayerId, onOpenMatch, viewer, onSa
 
   /** Score au centre de la ligne : sets gagnés (mini-pong), ✓ du vainqueur (fléchettes), sinon « vs ». */
   const score = (m: Match) => {
+    if (m.status === 'walkover') {
+      return (
+        <span className="text-[10px] font-semibold text-clay uppercase" title={`Forfait de ${name(m.forfeit_player_id)}`}>
+          forfait
+        </span>
+      )
+    }
+    if (m.status === 'cancelled') return <span className="text-[10px] text-ink/40 uppercase">annulé</span>
     if (m.status !== 'played') return <span className="text-xs text-ink/40">vs</span>
     if (!isMiniPong) {
       return <span className="text-xs text-court">{m.winner_player_id === m.home_player_id ? '✓ –' : '– ✓'}</span>
@@ -185,15 +193,15 @@ export function PoolsView({ bundle, highlightPlayerId, onOpenMatch, viewer, onSa
                         >
                           <span
                             className={`min-w-0 flex-1 truncate text-right ${
-                              m.status === 'played' && m.winner_player_id === m.home_player_id ? 'font-bold' : ''
+                              ['played', 'walkover'].includes(m.status) && m.winner_player_id === m.home_player_id ? 'font-bold' : ''
                             }`}
                           >
                             {name(m.home_player_id)}
                           </span>
-                          <span className="w-10 shrink-0 text-center">{score(m)}</span>
+                          <span className="w-12 shrink-0 text-center">{score(m)}</span>
                           <span
                             className={`min-w-0 flex-1 truncate ${
-                              m.status === 'played' && m.winner_player_id === m.away_player_id ? 'font-bold' : ''
+                              ['played', 'walkover'].includes(m.status) && m.winner_player_id === m.away_player_id ? 'font-bold' : ''
                             }`}
                           >
                             {name(m.away_player_id)}
