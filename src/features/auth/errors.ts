@@ -35,6 +35,9 @@ const MESSAGES_BY_DB_ERROR: Record<string, string> = {
   ALREADY_ENTERED: 'Ce joueur est déjà inscrit au tournoi.',
   NOT_ENTERED: "Ce joueur n'est pas inscrit au tournoi.",
   INVALID_STATUS: 'Changement de statut impossible.',
+  NOT_NAME_ONLY: 'Ce joueur est déjà lié à un compte. Recharge la page.',
+  MERGE_CONFLICT:
+    "Ce compte et ce nom seul jouent dans un même tournoi : fusion impossible. Remplace d'abord l'un des deux dans ce tournoi.",
 }
 
 /** Règles de la base (contraintes) violées, par nom de contrainte. */

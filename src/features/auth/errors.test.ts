@@ -28,6 +28,11 @@ describe('traduction des erreurs', () => {
     expect(translateError({ code: '23514', message: 'violates check constraint "autre"' })).toMatch(/règles de la base/)
   })
 
+  it('traduit les refus du rattachement nom seul → compte', () => {
+    expect(translateError({ code: 'P0001', message: 'MERGE_CONFLICT' })).toMatch(/fusion impossible/)
+    expect(translateError({ code: 'P0001', message: 'NOT_NAME_ONLY' })).toMatch(/déjà lié à un compte/)
+  })
+
   it('retombe sur un message générique avec le détail', () => {
     expect(translateError({ message: 'boom' })).toBe(`${GENERIC_ERROR} (détail : boom)`)
     expect(translateError({})).toBe(GENERIC_ERROR)
