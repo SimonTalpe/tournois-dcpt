@@ -1,0 +1,245 @@
+import { useState, type FormEvent, type ReactNode } from 'react'
+import { Notice, PrimaryButton, TextField } from '../../components/ui.tsx'
+import { DISCIPLINE_LABELS, FORMAT_LABELS, type Discipline, type TournamentFormat, type TournamentInput } from './types.ts'
+
+type Props = {
+  initial: TournamentInput
+  /** Tournoi lancé : discipline, format et options ne sont plus modifiables. */
+  structureLocked?: boolean
+  submitLabel: string
+  onSubmit: (input: TournamentInput) => Promise<void>
+}
+
+function Choice<T extends string>({
+  legend,
+  value,
+  options,
+  onChange,
+  disabled,
+}: {
+  legend: string
+  value: T
+  options: { value: T; label: string }[]
+  onChange: (value: T) => void
+  disabled?: boolean
+}) {
+  return (
+    <fieldset className="space-y-1" disabled={disabled}>
+      <legend className="text-sm font-medium">{legend}</legend>
+      <div className="flex flex-wrap gap-2">
+        {options.map((option) => (
+          <label
+            key={option.value}
+            className="cursor-pointer rounded-xl border border-ink/20 px-3 py-2 text-sm has-[:checked]:border-court has-[:checked]:bg-court has-[:checked]:text-chalk has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60"
+          >
+            <input
+              type="radio"
+              className="sr-only"
+              checked={value === option.value}
+              onChange={() => onChange(option.value)}
+            />
+            {option.label}
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  )
+}
+
+function Toggle({
+  label,
+  hint,
+  checked,
+  onChange,
+  disabled,
+}: {
+  label: string
+  hint?: ReactNode
+  checked: boolean
+  onChange: (checked: boolean) => void
+  disabled?: boolean
+}) {
+  return (
+    <label className={`flex items-start gap-3 ${disabled ? 'opacity-60' : 'cursor-pointer'}`}>
+      <input
+        type="checkbox"
+        className="mt-1 h-5 w-5 accent-court"
+        checked={checked}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      <span>
+        <span className="block text-sm font-medium">{label}</span>
+        {hint && <span className="block text-xs text-ink/60">{hint}</span>}
+      </span>
+    </label>
+  )
+}
+
+/** Création / configuration d'un tournoi (admin). */
+export function TournamentForm({ initial, structureLocked = false, submitLabel, onSubmit }: Props) {
+  const [form, setForm] = useState<TournamentInput>(initial)
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const set = <K extends keyof TournamentInput>(key: K, value: TournamentInput[K]) =>
+    setForm((current) => ({ ...current, [key]: value }))
+
+  const withPools = form.format === 'pools_knockout'
+
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault()
+    setError(null)
+    const name = form.name.trim()
+    if (name.length < 2) return setError('Donne un nom au tournoi (2 caractères minimum).')
+    if (withPools && (!form.pool_count || form.pool_count < 1 || !form.qualifiers_per_pool || form.qualifiers_per_pool < 1)) {
+      return setError('Indique le nombre de poules et de qualifiés par poule.')
+    }
+    setBusy(true)
+    try {
+      await onSubmit({
+        ...form,
+        name,
+        description: form.description.trim(),
+        pool_count: withPools ? form.pool_count : null,
+        qualifiers_per_pool: withPools ? form.qualifiers_per_pool : null,
+      })
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const numberValue = (value: string) => (value === '' ? null : Math.max(0, Math.floor(Number(value))))
+
+  return (
+    <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+      <TextField
+        label="Nom du tournoi"
+        name="tournamentName"
+        maxLength={80}
+        value={form.name}
+        onChange={(e) => set('name', e.target.value)}
+        placeholder="ex. Mini-pong de décembre"
+      />
+
+      <Choice<Discipline>
+        legend="Discipline"
+        value={form.discipline}
+        disabled={structureLocked}
+        options={(['mini_pong', 'darts'] as const).map((value) => ({ value, label: DISCIPLINE_LABELS[value] }))}
+        onChange={(value) => set('discipline', value)}
+      />
+
+      <div className="space-y-1">
+        <label htmlFor="tournamentDescription" className="block text-sm font-medium">
+          Description
+        </label>
+        <textarea
+          id="tournamentDescription"
+          rows={4}
+          maxLength={5000}
+          className="w-full rounded-xl border border-ink/20 px-3 py-2.5 text-base outline-none focus:ring-2 focus:ring-court/40"
+          value={form.description}
+          onChange={(e) => set('description', e.target.value)}
+          placeholder="Dates, déroulement, lots…"
+        />
+        <p className="text-xs text-ink/60">Texte simple pour l'instant (mise en forme riche prévue à l'étape 5).</p>
+      </div>
+
+      <Choice<TournamentFormat>
+        legend="Format"
+        value={form.format}
+        disabled={structureLocked}
+        options={(['knockout', 'pools_knockout'] as const).map((value) => ({ value, label: FORMAT_LABELS[value] }))}
+        onChange={(value) =>
+          setForm((current) => ({
+            ...current,
+            format: value,
+            pool_count: value === 'pools_knockout' ? (current.pool_count ?? 4) : null,
+            qualifiers_per_pool: value === 'pools_knockout' ? (current.qualifiers_per_pool ?? 2) : null,
+          }))
+        }
+      />
+
+      {withPools && (
+        <div className="space-y-3 rounded-xl bg-chalk p-3">
+          <div className="grid grid-cols-2 gap-3">
+            <TextField
+              label="Nombre de poules"
+              name="poolCount"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={16}
+              disabled={structureLocked}
+              value={form.pool_count ?? ''}
+              onChange={(e) => set('pool_count', numberValue(e.target.value))}
+            />
+            <TextField
+              label="Qualifiés par poule"
+              name="qualifiersPerPool"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={8}
+              disabled={structureLocked}
+              value={form.qualifiers_per_pool ?? ''}
+              onChange={(e) => set('qualifiers_per_pool', numberValue(e.target.value))}
+            />
+          </div>
+          <p className="text-xs text-ink/60">Les joueurs sont répartis au hasard ; les poules diffèrent au plus d'un joueur.</p>
+          <Choice
+            legend="Placement des qualifiés dans le tableau final"
+            value={form.qualifier_placement}
+            options={[
+              { value: 'classic', label: 'Croisement classique' },
+              { value: 'random', label: 'Tirage au sort' },
+            ]}
+            onChange={(value) => set('qualifier_placement', value)}
+          />
+          <p className="text-xs text-ink/60">
+            Croisement classique : 1er A contre 2e B, 1er B contre 2e A… ; deux joueurs d'une même poule se retrouvent
+            le plus tard possible.
+          </p>
+        </div>
+      )}
+
+      <div className="space-y-3">
+        <Toggle
+          label="Match pour la 3e place"
+          hint="Entre les perdants des demi-finales."
+          checked={form.third_place}
+          disabled={structureLocked}
+          onChange={(value) => set('third_place', value)}
+        />
+        <Toggle
+          label="Tableau de consolante"
+          hint={withPools ? 'Pour les joueurs non qualifiés en sortie de poule.' : 'Pour les perdants du 1er tour.'}
+          checked={form.consolation}
+          disabled={structureLocked}
+          onChange={(value) => set('consolation', value)}
+        />
+      </div>
+
+      {structureLocked ? null : form.discipline === 'mini_pong' ? (
+        <Choice
+          legend="Format de jeu par défaut (modifiable ensuite pour chaque tour)"
+          value={String(form.default_sets_to_win)}
+          options={[1, 2, 3].map((n) => ({ value: String(n), label: n === 1 ? '1 set gagnant' : `${n} sets gagnants` }))}
+          onChange={(value) => set('default_sets_to_win', Number(value))}
+        />
+      ) : (
+        <Choice
+          legend="Format de jeu par défaut (modifiable ensuite pour chaque tour)"
+          value={String(form.default_dart_start)}
+          options={[301, 501].map((n) => ({ value: String(n), label: String(n) }))}
+          onChange={(value) => set('default_dart_start', Number(value))}
+        />
+      )}
+
+      {error && <Notice tone="error">{error}</Notice>}
+      <PrimaryButton busy={busy}>{submitLabel}</PrimaryButton>
+    </form>
+  )
+}

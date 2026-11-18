@@ -25,7 +25,16 @@ const MESSAGES_BY_DB_ERROR: Record<string, string> = {
   INVALID_CODE: 'Le code doit contenir entre 4 et 40 caractères.',
   CANNOT_CHANGE_OWN_STATUS: 'Tu ne peux pas désactiver ton propre compte.',
   CANNOT_RESET_OWN_PASSWORD: 'Pour ton propre compte, utilise « Mot de passe oublié ».',
-  NOT_FOUND: 'Compte introuvable.',
+  NOT_FOUND: 'Élément introuvable (supprimé entre-temps ?). Recharge la page.',
+  CONFIG_LOCKED: 'Le tournoi est lancé : format et options ne sont plus modifiables. Annule le lancement pour les changer.',
+  TOURNAMENT_HAS_RESULTS: 'Un match a déjà été joué : le tirage ne peut plus être refait.',
+  TOURNAMENT_CLOSED: 'Le tournoi est terminé ou archivé.',
+  NOT_ENOUGH_PLAYERS: 'Il faut au moins 2 joueurs inscrits.',
+  INVALID_PLAN: 'Le tirage ne correspond plus aux inscrits. Recharge la page et recommence.',
+  NOT_IN_PROGRESS: "Le tournoi n'est pas en cours.",
+  ALREADY_ENTERED: 'Ce joueur est déjà inscrit au tournoi.',
+  NOT_ENTERED: "Ce joueur n'est pas inscrit au tournoi.",
+  INVALID_STATUS: 'Changement de statut impossible.',
 }
 
 export const GENERIC_ERROR = 'Une erreur est survenue. Réessaie dans un instant.'
