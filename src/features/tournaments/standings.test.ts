@@ -39,6 +39,8 @@ const match = (pool: string, home: string, away: string, winner: string | null):
   result_by_admin: false,
   result_first_at: null,
   result_at: null,
+  scheduled_at: null,
+  location_id: null,
 })
 
 function bundle(matches: Match[], tiebreaks: TournamentBundle['tiebreaks'] = []): TournamentBundle {
@@ -59,6 +61,7 @@ function bundle(matches: Match[], tiebreaks: TournamentBundle['tiebreaks'] = [])
     matches,
     sets: new Map(),
     tiebreaks,
+    locations: [],
     authors: new Map(),
   }
 }

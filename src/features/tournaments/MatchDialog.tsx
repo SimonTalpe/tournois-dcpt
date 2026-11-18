@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Notice, SecondaryButton } from '../../components/ui.tsx'
+import { canSchedule } from '../../lib/schedule.ts'
 import { checkMiniPongSets, maxSets, parseSetRows, resultRights, setsWon, type Side } from '../../lib/scores.ts'
-import { clearResult, submitResult } from './api.ts'
+import { clearResult, submitResult, swapHomeAway } from './api.ts'
 import { numberMatches } from './display.ts'
+import { ScheduleSection } from './ScheduleSection.tsx'
 import { gameFormatLabel, type Match, type TournamentBundle } from './types.ts'
 
 export type Viewer = { isAdmin: boolean; isActivePlayer: boolean; profileId: string | null; playerId: string | null }
@@ -91,6 +93,20 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
     return run(() => submitResult(match.id, { sets: parsed.sets }))
   }
 
+  async function swap() {
+    if (!window.confirm('Inverser domicile et extérieur pour ce match ?')) return
+    setBusy(true)
+    setError(null)
+    try {
+      await swapHomeAway(match.id)
+      await onSaved()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   function clear() {
     if (!window.confirm('Effacer ce résultat ? Le match redevient « à jouer ».')) return
     return run(() => clearResult(match.id))
@@ -151,6 +167,12 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
           })}
         </ul>
 
+        {viewer.isAdmin && match.status === 'pending' && ['in_progress', 'finished'].includes(tournament.status) && (
+          <SecondaryButton disabled={busy} onClick={() => void swap()}>
+            ⇄ Inverser domicile / extérieur
+          </SecondaryButton>
+        )}
+
         {played && (
           <div className="space-y-1 text-sm">
             {!isDarts && existingSets.length > 0 && (
@@ -169,6 +191,19 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
         )}
         {match.status === 'pending' && !rights.canEdit && <p className="text-sm text-ink/60">Match à jouer.</p>}
         {!rights.canEdit && rights.reason && played && <Notice>{rights.reason}</Notice>}
+
+        {match.status !== 'bye' && (
+          <ScheduleSection
+            match={match}
+            locations={bundle.locations}
+            canEdit={canSchedule(
+              { status: match.status, homePlayerId: match.home_player_id, awayPlayerId: match.away_player_id },
+              viewer,
+              tournament.status,
+            )}
+            onSaved={onSaved}
+          />
+        )}
 
         {rights.canEdit && (
           <div className="space-y-3 border-t border-ink/10 pt-4">

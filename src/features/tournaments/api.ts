@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase.ts'
 import { translateError } from '../auth/errors.ts'
 import type {
   Entry,
+  Location,
   Match,
   Player,
   Pool,
@@ -40,7 +41,7 @@ export async function loadTournament(id: string): Promise<TournamentBundle | nul
   const client = db()
   const tournament = check(await client.from('tournaments').select(TOURNAMENT_COLUMNS).eq('id', id).maybeSingle()) as Tournament | null
   if (!tournament) return null
-  const [entries, pools, rounds, matches] = await Promise.all([
+  const [entries, pools, rounds, matches, locations] = await Promise.all([
     client.from('tournament_entries').select('tournament_id, player_id, pool_id').eq('tournament_id', id),
     client.from('pools').select('id, tournament_id, label').eq('tournament_id', id).order('label'),
     client
@@ -50,10 +51,11 @@ export async function loadTournament(id: string): Promise<TournamentBundle | nul
     client
       .from('matches')
       .select(
-        'id, tournament_id, round_id, pool_id, position, home_player_id, away_player_id, winner_player_id, status, next_match_id, next_slot, loser_next_match_id, loser_next_slot, result_by, result_by_admin, result_first_at, result_at, match_sets(set_number, home_points, away_points)',
+        'id, tournament_id, round_id, pool_id, position, home_player_id, away_player_id, winner_player_id, status, next_match_id, next_slot, loser_next_match_id, loser_next_slot, result_by, result_by_admin, result_first_at, result_at, scheduled_at, location_id, match_sets(set_number, home_points, away_points)',
       )
       .eq('tournament_id', id)
       .order('position'),
+    client.from('locations').select('id, name').order('name'),
   ])
   const entryRows = check(entries) as Entry[]
   type SetRow = { set_number: number; home_points: number; away_points: number }
@@ -104,6 +106,7 @@ export async function loadTournament(id: string): Promise<TournamentBundle | nul
     players: new Map(players.map((p) => [p.id, p])),
     pools: poolRows,
     tiebreaks,
+    locations: check(locations) as Location[],
     rounds: check(rounds) as Round[],
     matches: matchRows,
   }
@@ -342,4 +345,37 @@ export async function generateFinalPhase(tournamentId: string, draw: DrawResult)
 
 export async function resetFinalPhase(tournamentId: string): Promise<void> {
   check(await db().rpc('admin_reset_final_phase', { p_tournament_id: tournamentId }))
+}
+
+// ---------------------------------------------------------------- Lieu, horaire, domicile/extérieur
+
+/** Lieu et horaire d'un match (null = non renseigné). */
+export async function setSchedule(matchId: string, scheduledAt: string | null, locationId: string | null): Promise<void> {
+  check(
+    await db().rpc('set_match_schedule', {
+      p_match_id: matchId,
+      p_scheduled_at: scheduledAt,
+      p_location_id: locationId,
+    }),
+  )
+}
+
+export async function swapHomeAway(matchId: string): Promise<void> {
+  check(await db().rpc('admin_swap_home_away', { p_match_id: matchId }))
+}
+
+export async function listLocations(): Promise<Location[]> {
+  return check(await db().from('locations').select('id, name').order('name')) as Location[]
+}
+
+export async function addLocation(name: string): Promise<void> {
+  check(await db().from('locations').insert({ name: name.trim() }))
+}
+
+export async function renameLocation(id: string, name: string): Promise<void> {
+  check(await db().from('locations').update({ name: name.trim() }).eq('id', id))
+}
+
+export async function deleteLocation(id: string): Promise<void> {
+  check(await db().from('locations').delete().eq('id', id))
 }

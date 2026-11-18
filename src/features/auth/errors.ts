@@ -45,6 +45,8 @@ const MESSAGES_BY_DB_ERROR: Record<string, string> = {
   POOL_NOT_FINISHED: 'Tous les matchs de poule ne sont pas encore joués.',
   FINAL_PHASE_EXISTS:
     'La phase finale est générée : les résultats de poule sont figés. Annule la phase finale (Gestion) pour les modifier.',
+  SCHEDULE_LOCKED: 'Le résultat est saisi : lieu et horaire ne sont plus modifiables (sauf par l’admin).',
+  SWAP_NOT_POSSIBLE: 'Inversion impossible : le match a déjà un résultat (ou est un exempt).',
   NOT_NAME_ONLY: 'Ce joueur est déjà lié à un compte. Recharge la page.',
   MERGE_CONFLICT:
     "Ce compte et ce nom seul jouent dans un même tournoi : fusion impossible. Remplace d'abord l'un des deux dans ce tournoi.",
@@ -58,6 +60,9 @@ const MESSAGES_BY_CONSTRAINT: Record<string, string> = {
   tournaments_description_check: 'La description est trop longue (5 000 caractères maximum).',
   tournaments_pool_count_check: 'Nombre de poules : entre 1 et 16.',
   tournaments_qualifiers_per_pool_check: 'Qualifiés par poule : entre 1 et 8.',
+  matches_schedule_slot: 'Horaire invalide : du lundi au vendredi, par tranches de 15 minutes.',
+  locations_name_check: 'Le nom du lieu doit contenir entre 2 et 40 caractères.',
+  locations_name_key: 'Ce lieu existe déjà.',
   players_full_name_check: 'Le nom du joueur doit contenir entre 2 et 80 caractères.',
   profiles_full_name_check: 'Le nom doit contenir entre 2 et 80 caractères.',
 }
