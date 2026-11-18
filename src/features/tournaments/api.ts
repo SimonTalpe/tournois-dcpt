@@ -168,6 +168,50 @@ export async function createNameOnlyPlayer(fullName: string): Promise<string> {
   return row.id
 }
 
+export type NameOnlyPlayer = { id: string; full_name: string; tournaments: string[]; match_count: number }
+
+/** « Noms seuls » avec les tournois où ils apparaissent (admin). */
+export async function listNameOnlyPlayers(): Promise<NameOnlyPlayer[]> {
+  return check(await db().rpc('admin_list_name_only_players')) as NameOnlyPlayer[]
+}
+
+/** Comptes (non supprimés) auxquels rattacher un nom seul, avec leur éventuelle fiche joueur. */
+export async function listLinkableAccounts(): Promise<{ id: string; full_name: string; hasPlayer: boolean }[]> {
+  const client = db()
+  const [accounts, players] = await Promise.all([
+    client.rpc('admin_list_accounts'),
+    client.from('players').select('profile_id').not('profile_id', 'is', null),
+  ])
+  const withPlayer = new Set((check(players) as { profile_id: string }[]).map((p) => p.profile_id))
+  return (check(accounts) as { id: string; full_name: string }[]).map((a) => ({
+    id: a.id,
+    full_name: a.full_name,
+    hasPlayer: withPlayer.has(a.id),
+  }))
+}
+
+/**
+ * Rattache un nom seul à un compte : inscriptions et matchs (joués et à venir) basculent sur le compte.
+ * Si le compte a déjà une fiche joueur, les deux sont fusionnées.
+ */
+export async function linkPlayerToAccount(playerId: string, profileId: string): Promise<void> {
+  const result = await db().rpc('admin_link_player_to_account', { p_player_id: playerId, p_profile_id: profileId })
+  if (result.error?.message?.includes('MERGE_CONFLICT') && 'details' in result.error && result.error.details) {
+    throw new TournamentError(
+      `Ce compte et ce nom seul jouent tous deux dans « ${String(result.error.details)} » : fusion impossible. Remplace d'abord l'un des deux dans ce tournoi.`,
+    )
+  }
+  check(result)
+}
+
+export async function renamePlayer(playerId: string, fullName: string): Promise<void> {
+  check(await db().from('players').update({ full_name: fullName.trim() }).eq('id', playerId))
+}
+
+export async function deletePlayer(playerId: string): Promise<void> {
+  check(await db().from('players').delete().eq('id', playerId))
+}
+
 export async function addEntry(tournamentId: string, playerId: string): Promise<void> {
   const result = await db().from('tournament_entries').insert({ tournament_id: tournamentId, player_id: playerId })
   if (result.error?.code === '23505') throw new TournamentError('Ce joueur est déjà inscrit.')

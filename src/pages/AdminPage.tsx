@@ -1,5 +1,6 @@
 import { DemoModeNotice } from '../components/ui.tsx'
 import { AccountsSection } from '../features/admin/AccountsSection.tsx'
+import { NameOnlySection } from '../features/admin/NameOnlySection.tsx'
 import { AllowedEmailsSection } from '../features/admin/AllowedEmailsSection.tsx'
 import { SpectatorCodeSection } from '../features/admin/SpectatorCodeSection.tsx'
 import { useAuth } from '../features/auth/AuthContext.ts'
@@ -14,6 +15,7 @@ export function AdminPage() {
       ) : (
         <>
           <AccountsSection />
+          <NameOnlySection />
           <SpectatorCodeSection />
           <AllowedEmailsSection />
         </>
