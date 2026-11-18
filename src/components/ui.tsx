@@ -105,18 +105,22 @@ export function SecondaryButton({
   disabled,
   type = 'button',
   danger = false,
+  ariaLabel,
 }: {
   children: ReactNode
   onClick?: () => void
   disabled?: boolean
   type?: 'submit' | 'button'
   danger?: boolean
+  /** Texte lu par les lecteurs d'écran quand le bouton n'affiche qu'un symbole. */
+  ariaLabel?: string
 }) {
   return (
     <button
       type={type}
       onClick={onClick}
       disabled={disabled}
+      aria-label={ariaLabel}
       className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition disabled:opacity-50 ${
         danger ? 'border-clay/50 text-clay hover:bg-clay/10' : 'border-court/30 text-court hover:bg-court/10'
       }`}

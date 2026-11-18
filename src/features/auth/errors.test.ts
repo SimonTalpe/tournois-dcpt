@@ -19,7 +19,12 @@ describe('traduction des erreurs', () => {
     expect(
       translateError({ code: '23514', message: 'new row for relation "tournaments" violates check constraint "tournaments_pool_options"' }),
     ).toMatch(/poules/)
-    expect(translateError({ code: '23503', message: 'violates foreign key constraint' })).toMatch(/encore utilisé/)
+    expect(
+      translateError({ code: '23503', message: 'update or delete on table "players" violates foreign key constraint "x"' }),
+    ).toMatch(/encore utilisé/)
+    expect(
+      translateError({ code: '23503', message: 'insert or update on table "tournament_entries" violates foreign key constraint "x"' }),
+    ).toMatch(/introuvable/)
     expect(translateError({ code: '23514', message: 'violates check constraint "autre"' })).toMatch(/règles de la base/)
   })
 

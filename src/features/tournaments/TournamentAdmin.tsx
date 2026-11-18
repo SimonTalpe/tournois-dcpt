@@ -104,7 +104,12 @@ export function TournamentAdmin({ bundle, reload, onDeleted }: Props) {
                 <li key={e.player_id} className="flex items-center gap-2 rounded-full bg-court/10 py-1 pr-1 pl-3 text-sm">
                   {name(e.player_id)}
                   {!players.get(e.player_id)?.profile_id && <span className="text-xs text-ink/50">(nom seul)</span>}
-                  <SecondaryButton danger disabled={busy} onClick={() => run(() => removeEntry(tournament.id, e.player_id))}>
+                  <SecondaryButton
+                    danger
+                    ariaLabel={`Désinscrire ${name(e.player_id)}`}
+                    disabled={busy}
+                    onClick={() => run(() => removeEntry(tournament.id, e.player_id))}
+                  >
                     ✕
                   </SecondaryButton>
                 </li>
@@ -210,10 +215,11 @@ export function TournamentAdmin({ bundle, reload, onDeleted }: Props) {
             <PeoplePicker
               excludedPlayerIds={enteredIds}
               actionLabel="Remplacer"
-              onPick={async (playerId) => {
+              confirmPick={(label) =>
+                window.confirm(`Remplacer ${name(replacing)} par ${label} dans ses matchs non joués ?`)
+              }
+              onPick={async (playerId, newName) => {
                 const old = name(replacing)
-                const newName = players.get(playerId)?.full_name ?? 'le remplaçant'
-                if (!window.confirm(`Remplacer ${old} ?`)) return
                 await replacePlayer(tournament.id, replacing, playerId)
                 setReplacing('')
                 setMessage(`${old} remplacé par ${newName}.`)

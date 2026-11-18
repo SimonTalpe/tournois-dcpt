@@ -125,18 +125,24 @@ export async function deleteTournament(id: string): Promise<void> {
 
 // ---------------------------------------------------------------- Participants
 
-/** Comptes actifs (pour l'inscription) et participants existants. */
+/**
+ * Comptes inscriptibles (actifs, email confirmé — réservé à l'admin) et participants existants.
+ * Un compte dont l'email n'a jamais été confirmé ne peut pas se connecter : il n'est pas proposé.
+ */
 export async function listSelectablePeople(): Promise<{
   accounts: { id: string; full_name: string }[]
   players: Player[]
 }> {
   const client = db()
   const [accounts, players] = await Promise.all([
-    client.from('profiles').select('id, full_name').eq('status', 'active').order('full_name'),
+    client.rpc('admin_list_accounts'),
     client.from('players').select('id, profile_id, full_name').order('full_name'),
   ])
+  const rows = check(accounts) as { id: string; full_name: string; status: string; email_confirmed: boolean }[]
   return {
-    accounts: check(accounts) as { id: string; full_name: string }[],
+    accounts: rows
+      .filter((a) => a.status === 'active' && a.email_confirmed)
+      .map(({ id, full_name }) => ({ id, full_name })),
     players: check(players) as Player[],
   }
 }
