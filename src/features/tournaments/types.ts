@@ -93,6 +93,18 @@ export type Match = {
   result_at: string | null
 }
 
+/** Départage de poule : classement complet d'un groupe de joueurs à égalité. */
+export type PoolTiebreak = {
+  id: string
+  pool_id: string
+  player_ids: string[]
+  ranking: string[]
+  result_by: string | null
+  result_by_admin: boolean
+  result_first_at: string
+  result_at: string
+}
+
 /** Tout ce qu'il faut pour afficher un tournoi. */
 export type TournamentBundle = {
   tournament: Tournament
@@ -103,6 +115,7 @@ export type TournamentBundle = {
   matches: Match[]
   /** Scores des sets (mini-pong), par match, dans l'ordre. */
   sets: Map<string, SetScore[]>
+  tiebreaks: PoolTiebreak[]
   /** Noms des auteurs des résultats (non lisibles par les spectateurs). */
   authors: Map<string, string>
 }

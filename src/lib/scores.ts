@@ -115,3 +115,27 @@ export function resultRights(
   if (now > deadline) return { canEdit: false, reason: 'Délai de correction (5 minutes) dépassé : contacte l’admin.' }
   return { canEdit: true, deadline }
 }
+
+/**
+ * Qui peut saisir / corriger un départage de poule (affichage ; la base applique les mêmes règles).
+ * Fléchettes : un joueur concerné ou l'admin. Mini-pong (égalité parfaite) : l'admin.
+ */
+export function tiebreakRights(
+  discipline: 'mini_pong' | 'darts',
+  groupPlayerIds: readonly string[],
+  existing: { resultBy: string | null; resultByAdmin: boolean; resultFirstAt: string } | null,
+  viewer: { isAdmin: boolean; isActivePlayer: boolean; profileId: string | null; playerId: string | null },
+  now: Date = new Date(),
+): ResultRights {
+  if (viewer.isAdmin) return { canEdit: true, deadline: null }
+  const concerned = Boolean(viewer.playerId && groupPlayerIds.includes(viewer.playerId))
+  if (discipline !== 'darts' || !viewer.isActivePlayer || !concerned) return { canEdit: false, reason: null }
+  if (!existing) return { canEdit: true, deadline: null }
+  if (existing.resultByAdmin) return { canEdit: false, reason: 'Départage saisi par l’admin : seul l’admin peut le modifier.' }
+  if (existing.resultBy !== viewer.profileId) {
+    return { canEdit: false, reason: 'Départage saisi par un autre joueur : contacte l’admin en cas d’erreur.' }
+  }
+  const deadline = new Date(new Date(existing.resultFirstAt).getTime() + CORRECTION_WINDOW_MS)
+  if (now > deadline) return { canEdit: false, reason: 'Délai de correction (5 minutes) dépassé : contacte l’admin.' }
+  return { canEdit: true, deadline }
+}

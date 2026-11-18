@@ -6,9 +6,11 @@ import {
   computeDraw,
   deleteTournament,
   drawConfigOf,
+  generateFinalPhase,
   launchTournament,
   removeEntry,
   replacePlayer,
+  resetFinalPhase,
   resetTournament,
   setTournamentStatus,
   updateRoundFormat,
@@ -16,6 +18,7 @@ import {
 } from './api.ts'
 import { sortRounds } from './display.ts'
 import { PeoplePicker } from './PeoplePicker.tsx'
+import { computeFinalPhase } from './standings.ts'
 import { TournamentForm } from './TournamentForm.tsx'
 import type { TournamentBundle, TournamentStatus } from './types.ts'
 
@@ -49,6 +52,26 @@ export function TournamentAdmin({ bundle, reload, onDeleted }: Props) {
   const name = (id: string) => players.get(id)?.full_name ?? 'Joueur inconnu'
   const sortedEntries = [...entries].sort((a, b) => name(a.player_id).localeCompare(name(b.player_id), 'fr'))
   const configError = validateDrawConfig(drawConfigOf(tournament), entries.length)
+  const hasPools = tournament.format === 'pools_knockout'
+  const finalRounds = rounds.filter((r) => r.bracket !== 'pool')
+  const finalPhaseExists = finalRounds.length > 0
+  const finalPhaseHasResults = matches.some(
+    (m) => finalRounds.some((r) => r.id === m.round_id) && ['played', 'walkover', 'cancelled'].includes(m.status),
+  )
+  const finalPhase = hasPools && isRunning && !finalPhaseExists ? computeFinalPhase(bundle) : null
+
+  function generate() {
+    if (!finalPhase?.ok) return
+    const notes = finalPhase.draw.notes.length ? `\n\nÀ noter :\n• ${finalPhase.draw.notes.join('\n• ')}` : ''
+    const placement = tournament.qualifier_placement === 'classic' ? 'croisement classique' : 'tirage au sort'
+    if (
+      !window.confirm(
+        `Générer la phase finale (${placement}) ? Les résultats de poule seront figés tant qu'elle existe.${notes}`,
+      )
+    )
+      return
+    void run(() => generateFinalPhase(tournament.id, finalPhase.draw), 'Phase finale générée : voir l’onglet « Phase finale ».')
+  }
 
   async function run(action: () => Promise<void>, success?: string) {
     setBusy(true)
@@ -188,6 +211,55 @@ export function TournamentAdmin({ bundle, reload, onDeleted }: Props) {
           </ul>
           {tournament.format === 'pools_knockout' && (
             <p className="text-xs text-ink/60">Les tours de la phase finale apparaîtront ici une fois celle-ci générée.</p>
+          )}
+        </Card>
+      )}
+
+      {hasPools && isRunning && (
+        <Card title="Phase finale">
+          {finalPhaseExists ? (
+            <>
+              <p className="text-sm text-ink/70">
+                Phase finale générée. Les résultats et départages de poule sont figés.
+              </p>
+              {finalPhaseHasResults ? (
+                <p className="text-sm text-ink/60">Un match de la phase finale est joué : elle ne peut plus être annulée.</p>
+              ) : (
+                <SecondaryButton
+                  disabled={busy}
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        'Annuler la phase finale ? Le tableau sera effacé et les poules redeviendront modifiables. Tu pourras la générer à nouveau.',
+                      )
+                    )
+                      void run(() => resetFinalPhase(tournament.id), 'Phase finale annulée.')
+                  }}
+                >
+                  Annuler la phase finale
+                </SecondaryButton>
+              )}
+            </>
+          ) : finalPhase?.ok ? (
+            <>
+              <p className="text-sm text-ink/70">
+                Toutes les poules sont terminées et départagées. Placement des qualifiés :{' '}
+                {tournament.qualifier_placement === 'classic' ? 'croisement classique' : 'tirage au sort'} (modifiable
+                dans « Nom et description » avant de générer).
+              </p>
+              <PrimaryButton type="button" busy={busy} onClick={generate}>
+                🏆 Générer la phase finale
+              </PrimaryButton>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-ink/70">Avant de pouvoir générer la phase finale :</p>
+              <ul className="list-disc space-y-1 pl-5 text-sm text-ink/70">
+                {(finalPhase && !finalPhase.ok ? finalPhase.problems : []).map((p) => (
+                  <li key={p}>{p}</li>
+                ))}
+              </ul>
+            </>
           )}
         </Card>
       )}

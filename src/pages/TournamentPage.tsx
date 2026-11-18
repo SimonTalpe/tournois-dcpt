@@ -136,7 +136,15 @@ export function TournamentPage() {
             {tournament.qualifier_placement === 'classic' ? 'croisement classique' : 'tirage au sort'}.
           </p>
         ))}
-      {tab === 'poules' && <PoolsView bundle={bundle} highlightPlayerId={myPlayerId} onOpenMatch={setOpenMatchId} />}
+      {tab === 'poules' && (
+        <PoolsView
+          bundle={bundle}
+          highlightPlayerId={myPlayerId}
+          onOpenMatch={setOpenMatchId}
+          viewer={viewer}
+          onSaved={reload}
+        />
+      )}
       {tab === 'consolante' && (
         <BracketView bundle={bundle} bracket="consolation" highlightPlayerId={myPlayerId} onOpenMatch={setOpenMatchId} />
       )}
