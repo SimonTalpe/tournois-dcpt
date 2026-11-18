@@ -42,10 +42,10 @@ set local role authenticated;
 select set_config('request.jwt.claim.sub', :alice_id, true);
 select tests.expect_error($$insert into public.players (full_name) values ('Pirate')$$, 'row-level security',
   'joueur : création de participant interdite');
-select tests.assert((select count(*) from public.players) = 5, 'joueur : voit les participants');
+select tests.assert((select count(*) from public.players) = 1, 'joueur : ne voit que son participant tant qu''aucun tournoi n''est lancé');
 
 select set_config('request.jwt.claim.sub', :spect_id, true);
-select tests.assert((select count(*) from public.players) = 5, 'spectateur : voit les noms des participants');
+select tests.assert((select count(*) from public.players) = 0, 'spectateur : aucun participant visible hors tournoi lancé');
 
 -- ---------------------------------------------------------------- Création (brouillon)
 select set_config('request.jwt.claim.sub', :alice_id, true);
@@ -69,6 +69,7 @@ select tests.expect_error(
 select set_config('request.jwt.claim.sub', :alice_id, true);
 select tests.assert((select count(*) from public.tournaments) = 0, 'joueur : brouillon invisible');
 select tests.assert((select count(*) from public.tournament_entries) = 0, 'joueur : inscriptions du brouillon invisibles');
+select tests.assert((select count(*) from public.players) = 1, 'joueur : inscrits d''un brouillon invisibles');
 select set_config('request.jwt.claim.sub', :spect_id, true);
 select tests.assert((select count(*) from public.tournaments) = 0, 'spectateur : brouillon invisible');
 
@@ -151,10 +152,12 @@ select tests.expect_error(
 select set_config('request.jwt.claim.sub', :alice_id, true);
 select tests.assert((select count(*) from public.tournaments) = 1, 'joueur : tournoi lancé visible');
 select tests.assert((select count(*) from public.matches) = 8, 'joueur : matchs visibles');
+select tests.assert((select count(*) from public.players) = 5, 'joueur : inscrits du tournoi lancé visibles');
 -- Droit de colonne accordé à tous, mais la règle RLS limite à l'admin : la mise à jour ne touche aucune ligne.
 update public.tournament_rounds set sets_to_win = 1;
 select set_config('request.jwt.claim.sub', :spect_id, true);
 select tests.assert((select count(*) from public.matches) = 8, 'spectateur : matchs visibles');
+select tests.assert((select count(*) from public.players) = 5, 'spectateur : inscrits du tournoi lancé visibles');
 select tests.assert((select sets_to_win from public.tournament_rounds where plan_key = 'main-3') = 3,
   'joueur : modification du format sans effet (RLS)');
 
@@ -171,6 +174,12 @@ select tests.assert(
 select tests.assert(
   not exists (select 1 from public.tournament_entries where player_id = :p2),
   'ancien joueur désinscrit');
+select set_config('request.jwt.claim.sub', :spect_id, true);
+select tests.assert(exists (select 1 from public.players where id = '20000000-0000-0000-0000-000000000006'),
+  'spectateur : remplaçant visible');
+select tests.assert(not exists (select 1 from public.players where id = :p2),
+  'spectateur : joueur remplacé sans match joué invisible');
+select set_config('request.jwt.claim.sub', :admin_id, true);
 
 -- Un match joué empêche de refaire le tirage
 reset role;
