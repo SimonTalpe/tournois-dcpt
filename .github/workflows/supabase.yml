@@ -2,13 +2,11 @@ name: Déploiement Supabase
 
 # Après chaque fusion sur main : applique les migrations, déploie les Edge Functions
 # et les réglages d'authentification (emails en français, code à 6 chiffres…).
-# Inactif tant que la variable SUPABASE_PROJECT_REF n'est pas définie dans GitHub.
 #
-# Réglages GitHub nécessaires (Settings → Secrets and variables → Actions) :
-#   variable SUPABASE_PROJECT_REF   : identifiant du projet (ex. fvhplztdwezndiziwhiu)
-#   variable SITE_URL               : https://mini-pong-flechettes.pages.dev
-#   secret   SUPABASE_ACCESS_TOKEN  : jeton personnel Supabase (Account → Access Tokens)
-#   secret   SUPABASE_DB_PASSWORD   : mot de passe de la base choisi à la création du projet
+# Identifiant du projet et adresse du site : non secrets, inscrits ci-dessous (env).
+# Secrets GitHub nécessaires (Settings → Secrets and variables → Actions → Secrets) :
+#   SUPABASE_ACCESS_TOKEN  : jeton personnel Supabase (Account → Access Tokens)
+#   SUPABASE_DB_PASSWORD   : mot de passe de la base choisi à la création du projet
 
 on:
   push:
@@ -24,15 +22,25 @@ concurrency:
 
 jobs:
   deploy:
-    if: ${{ vars.SUPABASE_PROJECT_REF != '' }}
     runs-on: ubuntu-latest
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-      PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
-      SITE_URL: ${{ vars.SITE_URL }}
+      PROJECT_REF: fvhplztdwezndiziwhiu
+      SITE_URL: https://mini-pong-flechettes.pages.dev
     steps:
       - uses: actions/checkout@v4
+
+      - name: Vérification des secrets
+        run: |
+          missing=""
+          [ -n "$SUPABASE_ACCESS_TOKEN" ] || missing="$missing SUPABASE_ACCESS_TOKEN"
+          [ -n "$SUPABASE_DB_PASSWORD" ] || missing="$missing SUPABASE_DB_PASSWORD"
+          if [ -n "$missing" ]; then
+            echo "::error::Secret(s) GitHub manquant(s) :$missing (Settings → Secrets and variables → Actions → Secrets)"
+            exit 1
+          fi
+
       - uses: supabase/setup-cli@v1
         with:
           version: latest
