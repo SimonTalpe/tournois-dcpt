@@ -130,6 +130,13 @@ describe('resultRights', () => {
     expect(resultRights(played(60), admin, 'in_progress', now).canEdit).toBe(true)
   })
 
+  it('poule figée par la phase finale : personne, même l’admin', () => {
+    expect(resultRights({ ...played(1), poolLocked: true }, admin, 'in_progress', now)).toMatchObject({
+      canEdit: false,
+      reason: expect.stringMatching(/figés/),
+    })
+  })
+
   it('tournoi terminé : admin seul ; joueurs inconnus : personne', () => {
     expect(resultRights(pending, alice, 'finished', now).canEdit).toBe(false)
     expect(resultRights(pending, admin, 'finished', now).canEdit).toBe(true)

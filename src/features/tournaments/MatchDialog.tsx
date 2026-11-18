@@ -41,6 +41,7 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
       resultBy: match.result_by,
       resultByAdmin: match.result_by_admin,
       resultFirstAt: match.result_first_at,
+      poolLocked: Boolean(match.pool_id) && rounds.some((r) => r.bracket !== 'pool'),
     },
     viewer,
     tournament.status,
@@ -190,7 +191,7 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
           </div>
         )}
         {match.status === 'pending' && !rights.canEdit && <p className="text-sm text-ink/60">Match à jouer.</p>}
-        {!rights.canEdit && rights.reason && played && <Notice>{rights.reason}</Notice>}
+        {!rights.canEdit && rights.reason && (played || match.pool_id) && <Notice>{rights.reason}</Notice>}
 
         {match.status !== 'bye' && (
           <ScheduleSection

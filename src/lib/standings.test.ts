@@ -242,6 +242,34 @@ describe('classement de poule — fléchettes', () => {
   })
 })
 
+describe('classement de poule — joueur remplacé en cours de poule', () => {
+  it('ses matchs joués comptent pour ses adversaires ; le remplaçant garde ses propres matchs', () => {
+    // x a perdu contre a, puis a été remplacé par y.
+    const result = computePoolStanding(
+      ['a', 'b', 'y'],
+      [
+        mp('a', 'x', [
+          [11, 3],
+          [11, 4],
+        ]),
+        mp('a', 'b', [
+          [5, 11],
+          [5, 11],
+        ]),
+        mp('b', 'y', [
+          [5, 11],
+          [5, 11],
+        ]),
+      ],
+      'mini_pong',
+      1,
+    )
+    expect(result.rows.find((r) => r.playerId === 'a')).toMatchObject({ played: 2, wins: 1, losses: 1, setsFor: 2, setsAgainst: 2 })
+    expect(result.rows.find((r) => r.playerId === 'y')).toMatchObject({ played: 1, wins: 1 })
+    expect(result.rows.map((r) => r.playerId)).not.toContain('x')
+  })
+})
+
 describe('finalStandings', () => {
   it('liste les poules incomplètes ou à départager', () => {
     const complete = computePoolStanding(['a', 'b'], [darts('a', 'b', 'a')], 'darts', 1)
