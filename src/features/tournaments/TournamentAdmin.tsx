@@ -259,7 +259,7 @@ export function TournamentAdmin({ bundle, reload, onDeleted }: Props) {
           structureLocked={!isDraft}
           submitLabel="Enregistrer"
           onSubmit={async (input) => {
-            await updateTournament(tournament.id, input)
+            await updateTournament(tournament.id, input, !isDraft)
             setMessage('Modifications enregistrées.')
             await reload()
           }}

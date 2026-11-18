@@ -14,8 +14,18 @@ describe('traduction des erreurs', () => {
     expect(translateError({ message: 'Database error saving new user' })).toMatch(/@fft.fr/)
   })
 
-  it('retombe sur un message générique', () => {
-    expect(translateError({ message: 'boom' })).toBe(GENERIC_ERROR)
+  it('traduit les refus et contraintes de la base', () => {
+    expect(translateError({ code: '42501', message: 'permission denied for table tournaments' })).toMatch(/droits insuffisants/)
+    expect(
+      translateError({ code: '23514', message: 'new row for relation "tournaments" violates check constraint "tournaments_pool_options"' }),
+    ).toMatch(/poules/)
+    expect(translateError({ code: '23503', message: 'violates foreign key constraint' })).toMatch(/encore utilisé/)
+    expect(translateError({ code: '23514', message: 'violates check constraint "autre"' })).toMatch(/règles de la base/)
+  })
+
+  it('retombe sur un message générique avec le détail', () => {
+    expect(translateError({ message: 'boom' })).toBe(`${GENERIC_ERROR} (détail : boom)`)
+    expect(translateError({})).toBe(GENERIC_ERROR)
     expect(translateError(null)).toBe(GENERIC_ERROR)
   })
 })

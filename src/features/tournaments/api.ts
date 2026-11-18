@@ -72,13 +72,51 @@ export async function loadTournament(id: string): Promise<TournamentBundle | nul
   }
 }
 
+const INPUT_FIELDS = [
+  'name',
+  'description',
+  'discipline',
+  'format',
+  'pool_count',
+  'qualifiers_per_pool',
+  'qualifier_placement',
+  'third_place',
+  'consolation',
+  'default_sets_to_win',
+  'default_dart_start',
+] as const satisfies readonly (keyof TournamentInput)[]
+
+/**
+ * Ne garde que les champs modifiables par l'admin. Le formulaire est prérempli avec la ligne complète
+ * du tournoi (id, statut, dates…) : envoyer ces colonnes ferait refuser l'enregistrement par la base.
+ * Champs propres à la structure omis si `structureLocked` (tournoi lancé).
+ */
+export function pickTournamentInput(
+  source: Partial<TournamentInput> & Record<string, unknown>,
+  structureLocked = false,
+): Partial<TournamentInput> {
+  const locked = new Set(['discipline', 'format', 'pool_count', 'qualifiers_per_pool', 'third_place', 'consolation'])
+  const result: Record<string, unknown> = {}
+  for (const field of INPUT_FIELDS) {
+    if (structureLocked && locked.has(field)) continue
+    if (field in source) result[field] = source[field]
+  }
+  return result as Partial<TournamentInput>
+}
+
 export async function createTournament(input: TournamentInput): Promise<string> {
-  const row = check(await db().from('tournaments').insert(input).select('id').single()) as { id: string }
+  const row = check(await db().from('tournaments').insert(pickTournamentInput(input)).select('id').single()) as {
+    id: string
+  }
   return row.id
 }
 
-export async function updateTournament(id: string, input: Partial<TournamentInput>): Promise<void> {
-  check(await db().from('tournaments').update(input).eq('id', id))
+export async function updateTournament(
+  id: string,
+  input: Partial<TournamentInput>,
+  structureLocked = false,
+): Promise<void> {
+  check(await db().from('tournaments').update(pickTournamentInput(input, structureLocked)).eq('id', id))
 }
 
 export async function deleteTournament(id: string): Promise<void> {

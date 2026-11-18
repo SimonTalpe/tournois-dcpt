@@ -37,6 +37,29 @@ const MESSAGES_BY_DB_ERROR: Record<string, string> = {
   INVALID_STATUS: 'Changement de statut impossible.',
 }
 
+/** Règles de la base (contraintes) violées, par nom de contrainte. */
+const MESSAGES_BY_CONSTRAINT: Record<string, string> = {
+  tournaments_pool_options:
+    'Format avec poules : indique le nombre de poules et de qualifiés (et aucun des deux en élimination directe).',
+  tournaments_name_check: 'Le nom du tournoi doit contenir entre 2 et 80 caractères.',
+  tournaments_description_check: 'La description est trop longue (5 000 caractères maximum).',
+  tournaments_pool_count_check: 'Nombre de poules : entre 1 et 16.',
+  tournaments_qualifiers_per_pool_check: 'Qualifiés par poule : entre 1 et 8.',
+  players_full_name_check: 'Le nom du joueur doit contenir entre 2 et 80 caractères.',
+  profiles_full_name_check: 'Le nom doit contenir entre 2 et 80 caractères.',
+}
+
+/** Erreurs PostgreSQL génériques (code SQLSTATE). */
+const MESSAGES_BY_SQLSTATE: Record<string, string> = {
+  '42501': "La base a refusé l'opération : droits insuffisants (es-tu toujours connecté en admin ?).",
+  '23505': 'Cet élément existe déjà.',
+  '23503': "Impossible : cet élément est encore utilisé ailleurs (ex. joueur inscrit à un tournoi).",
+  '23514': 'Une valeur saisie ne respecte pas les règles de la base.',
+  '23502': 'Un champ obligatoire est vide.',
+  '22P02': 'Une valeur saisie a un format invalide.',
+  PGRST116: 'Élément introuvable (supprimé entre-temps ?). Recharge la page.',
+}
+
 export const GENERIC_ERROR = 'Une erreur est survenue. Réessaie dans un instant.'
 
 export function translateError(error: ErrorLike): string {
@@ -52,5 +75,12 @@ export function translateError(error: ErrorLike): string {
   if (/invalid login credentials/i.test(message)) return MESSAGES_BY_CODE.invalid_credentials
   if (/token has expired or is invalid/i.test(message)) return MESSAGES_BY_CODE.otp_expired
   if (/failed to fetch|network/i.test(message)) return 'Connexion impossible. Vérifie ton réseau.'
+  for (const [constraint, text] of Object.entries(MESSAGES_BY_CONSTRAINT)) {
+    if (message.includes(constraint)) return text
+  }
+  if (/permission denied/i.test(message)) return MESSAGES_BY_SQLSTATE['42501']
+  if (error.code && MESSAGES_BY_SQLSTATE[error.code]) return MESSAGES_BY_SQLSTATE[error.code]
+  // Erreur imprévue : on affiche le détail technique pour pouvoir la signaler.
+  if (message) return `${GENERIC_ERROR} (détail : ${message})`
   return GENERIC_ERROR
 }
