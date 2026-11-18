@@ -1,0 +1,6 @@
+# Configuration minimale pour la CLI Supabase (utilisée par la vérification GitHub « Déploiement Supabase »).
+# Les réglages d'authentification sont appliqués par .github/workflows/supabase.yml (API de gestion Supabase).
+project_id = "tournois-dcpt"
+
+[functions.admin-temp-password]
+verify_jwt = true
