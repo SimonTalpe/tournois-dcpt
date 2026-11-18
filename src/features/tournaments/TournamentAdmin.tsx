@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Notice, PrimaryButton, SecondaryButton } from '../../components/ui.tsx'
 import { validateDrawConfig } from '../../lib/draw/plan.ts'
 import {
@@ -6,8 +6,10 @@ import {
   computeDraw,
   deleteTournament,
   drawConfigOf,
+  forfeitPlayer,
   generateFinalPhase,
   launchTournament,
+  listDisabledPlayersWithPendingMatches,
   removeEntry,
   replacePlayer,
   resetFinalPhase,
@@ -28,9 +30,9 @@ type Props = {
   onDeleted: () => void
 }
 
-function Card({ title, children }: { title: string; children: ReactNode }) {
+function Card({ title, children, id }: { title: string; children: ReactNode; id?: string }) {
   return (
-    <section className="space-y-3 rounded-2xl bg-white p-4 shadow-sm">
+    <section id={id} className="scroll-mt-4 space-y-3 rounded-2xl bg-white p-4 shadow-sm">
       <h2 className="text-lg font-bold text-court">{title}</h2>
       {children}
     </section>
@@ -44,9 +46,26 @@ export function TournamentAdmin({ bundle, reload, onDeleted }: Props) {
   const [message, setMessage] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [replacing, setReplacing] = useState<string>('')
+  const [disabled, setDisabled] = useState<{ player_id: string; full_name: string; pending_matches: number }[]>([])
 
   const isDraft = tournament.status === 'draft'
   const isRunning = tournament.status === 'in_progress'
+
+  // Comptes désactivés qui ont encore des matchs à jouer ici (relu à chaque rechargement du tournoi).
+  useEffect(() => {
+    if (!isRunning) return
+    let cancelled = false
+    listDisabledPlayersWithPendingMatches()
+      .then((rows) => {
+        if (!cancelled) setDisabled(rows.filter((r) => r.tournament_id === tournament.id))
+      })
+      .catch(() => {
+        if (!cancelled) setDisabled([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [bundle, isRunning, tournament.id])
   const hasResults = matches.some((m) => ['played', 'walkover', 'cancelled'].includes(m.status))
   const enteredIds = new Set(entries.map((e) => e.player_id))
   const name = (id: string) => players.get(id)?.full_name ?? 'Joueur inconnu'
@@ -264,8 +283,55 @@ export function TournamentAdmin({ bundle, reload, onDeleted }: Props) {
         </Card>
       )}
 
+      {isRunning && disabled.length > 0 && (
+        <Card title="⚠️ Comptes désactivés">
+          <p className="text-sm text-ink/70">
+            Ces joueurs ont un compte désactivé mais encore des matchs à jouer. Remplace-les, ou déclare-les forfait sur
+            tous leurs matchs non joués.
+          </p>
+          <ul className="divide-y divide-ink/10">
+            {disabled.map((d) => (
+              <li key={d.player_id} className="flex flex-col gap-2 py-2 sm:flex-row sm:items-center sm:justify-between">
+                <span className="text-sm">
+                  <span className="font-semibold">{d.full_name}</span> · {d.pending_matches} match
+                  {d.pending_matches > 1 ? 's' : ''} à jouer
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  <SecondaryButton
+                    disabled={busy}
+                    onClick={() => {
+                      setReplacing(d.player_id)
+                      document.getElementById('remplacer-un-joueur')?.scrollIntoView({ behavior: 'smooth' })
+                    }}
+                  >
+                    Remplacer
+                  </SecondaryButton>
+                  <SecondaryButton
+                    danger
+                    disabled={busy}
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          `Déclarer ${d.full_name} forfait sur tous ses matchs non joués ? Ses adversaires seront qualifiés.`,
+                        )
+                      )
+                        void run(async () => {
+                          const count = await forfeitPlayer(tournament.id, d.player_id)
+                          setMessage(`${d.full_name} : forfait sur ${count} match${count > 1 ? 's' : ''}.`)
+                        })
+                    }}
+                  >
+                    Déclarer forfait
+                  </SecondaryButton>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
       {isRunning && (
-        <Card title="Remplacer un joueur">
+        <Card title="Remplacer un joueur" id="remplacer-un-joueur">
           <p className="text-sm text-ink/70">
             Le remplaçant reprend la place du joueur dans tous ses matchs non joués. Les matchs déjà joués restent au nom
             de l'ancien joueur.

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Notice, SecondaryButton } from '../../components/ui.tsx'
 import { canSchedule } from '../../lib/schedule.ts'
 import { checkMiniPongSets, maxSets, parseSetRows, resultRights, setsWon, type Side } from '../../lib/scores.ts'
-import { clearResult, submitResult, swapHomeAway } from './api.ts'
+import { cancelMatch, clearResult, reopenMatch, setWalkover, submitResult, swapHomeAway } from './api.ts'
 import { numberMatches } from './display.ts'
 import { ScheduleSection } from './ScheduleSection.tsx'
 import { gameFormatLabel, type Match, type TournamentBundle } from './types.ts'
@@ -94,12 +94,13 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
     return run(() => submitResult(match.id, { sets: parsed.sets }))
   }
 
-  async function swap() {
-    if (!window.confirm('Inverser domicile et extérieur pour ce match ?')) return
+  /** Action de l'admin sur le match (la fenêtre reste ouverte). */
+  async function adminAction(confirmText: string, action: () => Promise<void>) {
+    if (!window.confirm(confirmText)) return
     setBusy(true)
     setError(null)
     try {
-      await swapHomeAway(match.id)
+      await action()
       await onSaved()
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
@@ -114,6 +115,9 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
   }
 
   const played = match.status === 'played'
+  const decided = played || match.status === 'walkover'
+  const canAct = viewer.isAdmin && ['in_progress', 'finished'].includes(tournament.status)
+  const poolLocked = Boolean(match.pool_id) && rounds.some((r) => r.bracket !== 'pool')
   const won = setsWon(existingSets)
   const author = match.result_by ? authors.get(match.result_by) : undefined
 
@@ -148,7 +152,8 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
         <ul className="space-y-1">
           {(['home', 'away'] as const).map((side) => {
             const id = sideId(side)
-            const isWinner = played && id === match.winner_player_id
+            const isWinner = decided && Boolean(id) && id === match.winner_player_id
+            const isForfeit = match.status === 'walkover' && id === match.forfeit_player_id
             return (
               <li
                 key={side}
@@ -163,16 +168,21 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
                 {played && (
                   <span className="shrink-0">{isDarts ? (isWinner ? 'Vainqueur' : '') : won[side]}</span>
                 )}
+                {isForfeit && <span className="shrink-0 text-xs font-semibold text-clay uppercase">forfait</span>}
               </li>
             )
           })}
         </ul>
 
-        {viewer.isAdmin && match.status === 'pending' && ['in_progress', 'finished'].includes(tournament.status) && (
-          <SecondaryButton disabled={busy} onClick={() => void swap()}>
-            ⇄ Inverser domicile / extérieur
-          </SecondaryButton>
+        {match.status === 'walkover' && (
+          <Notice>
+            Forfait de {name(match.forfeit_player_id)} :{' '}
+            {match.winner_player_id
+              ? `${name(match.winner_player_id)} est qualifié d'office.`
+              : "son adversaire sera qualifié d'office dès qu'il sera connu."}
+          </Notice>
         )}
+        {match.status === 'cancelled' && <Notice>Match annulé : il ne compte pas dans le classement de la poule.</Notice>}
 
         {played && (
           <div className="space-y-1 text-sm">
@@ -192,6 +202,69 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
         )}
         {match.status === 'pending' && !rights.canEdit && <p className="text-sm text-ink/60">Match à jouer.</p>}
         {!rights.canEdit && rights.reason && (played || match.pool_id) && <Notice>{rights.reason}</Notice>}
+
+        {canAct && !poolLocked && (match.status === 'pending' || match.status === 'walkover' || match.status === 'cancelled') && (
+          <div className="space-y-2 border-t border-ink/10 pt-4">
+            <h3 className="font-semibold">Actions admin</h3>
+            <div className="flex flex-wrap gap-2">
+              {match.status === 'pending' && (
+                <>
+                  <SecondaryButton
+                    disabled={busy}
+                    onClick={() => void adminAction('Inverser domicile et extérieur pour ce match ?', () => swapHomeAway(match.id))}
+                  >
+                    ⇄ Inverser domicile / extérieur
+                  </SecondaryButton>
+                  {(['home', 'away'] as const).map((side) => {
+                    const id = sideId(side)
+                    if (!id) return null
+                    return (
+                      <SecondaryButton
+                        key={side}
+                        danger
+                        disabled={busy}
+                        onClick={() =>
+                          void adminAction(
+                            `Déclarer ${name(id)} forfait ? Son adversaire sera qualifié${
+                              sideId(side === 'home' ? 'away' : 'home') ? '' : " d'office dès qu'il sera connu"
+                            }.`,
+                            () => setWalkover(match.id, id),
+                          )
+                        }
+                      >
+                        Forfait de {name(id)}
+                      </SecondaryButton>
+                    )
+                  })}
+                  {match.pool_id && (
+                    <SecondaryButton
+                      danger
+                      disabled={busy}
+                      onClick={() =>
+                        void adminAction('Annuler ce match ? Il ne comptera pas dans le classement de la poule.', () =>
+                          cancelMatch(match.id),
+                        )
+                      }
+                    >
+                      Annuler le match
+                    </SecondaryButton>
+                  )}
+                </>
+              )}
+              {(match.status === 'walkover' || match.status === 'cancelled') && (
+                <SecondaryButton
+                  disabled={busy}
+                  onClick={() =>
+                    void adminAction('Rétablir ce match ? Il redevient « à jouer ».', () => reopenMatch(match.id))
+                  }
+                >
+                  ↺ Rétablir le match
+                </SecondaryButton>
+              )}
+            </div>
+            {!rights.canEdit && error && <Notice tone="error">{error}</Notice>}
+          </div>
+        )}
 
         {match.status !== 'bye' && (
           <ScheduleSection

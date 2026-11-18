@@ -130,6 +130,11 @@ describe('resultRights', () => {
     expect(resultRights(played(60), admin, 'in_progress', now).canEdit).toBe(true)
   })
 
+  it('forfait ou match annulé : pas de saisie de score (l’admin rétablit d’abord le match)', () => {
+    expect(resultRights({ ...pending, status: 'walkover' }, admin, 'in_progress', now)).toEqual({ canEdit: false, reason: null })
+    expect(resultRights({ ...pending, status: 'cancelled' }, alice, 'in_progress', now)).toEqual({ canEdit: false, reason: null })
+  })
+
   it('poule figée par la phase finale : personne, même l’admin', () => {
     expect(resultRights({ ...played(1), poolLocked: true }, admin, 'in_progress', now)).toMatchObject({
       canEdit: false,

@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router'
+import { listDisabledPlayersWithPendingMatches, type DisabledPlayerPending } from '../tournaments/api.ts'
 import { Notice, SecondaryButton } from '../../components/ui.tsx'
 import { supabase } from '../../lib/supabase.ts'
 import { useAuth } from '../auth/AuthContext.ts'
@@ -25,6 +27,7 @@ export function AccountsSection() {
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
+  const [pending, setPending] = useState<DisabledPlayerPending[]>([])
 
   const load = useCallback(async () => {
     if (!supabase) return
@@ -51,6 +54,12 @@ export function AccountsSection() {
     setBusyId(null)
     if (statusError) return setError(translateError(statusError))
     setMessage(`${account.full_name} : compte ${status === 'disabled' ? 'désactivé' : 'réactivé'}.`)
+    // Compte désactivé encore engagé dans un tournoi en cours : proposer remplacement ou forfait.
+    setPending(
+      status === 'disabled'
+        ? (await listDisabledPlayersWithPendingMatches().catch(() => [])).filter((p) => p.profile_id === account.id)
+        : [],
+    )
     await load()
   }
 
@@ -87,6 +96,21 @@ export function AccountsSection() {
       <h2 className="text-lg font-bold text-court">Comptes joueurs</h2>
       {error && <Notice tone="error">{error}</Notice>}
       {message && <Notice tone="success">{message}</Notice>}
+      {pending.length > 0 && (
+        <Notice>
+          {pending[0].full_name} a encore des matchs à jouer :{' '}
+          {pending.map((p, i) => (
+            <span key={p.tournament_id}>
+              {i > 0 && ', '}
+              <Link to={`/tournois/${p.tournament_id}?onglet=gestion`} className="font-semibold underline">
+                {p.tournament_name}
+              </Link>{' '}
+              ({p.pending_matches})
+            </span>
+          ))}
+          . Dans la gestion du tournoi, remplace-le ou déclare-le forfait.
+        </Notice>
+      )}
       {!accounts ? (
         <p className="text-sm text-ink/60">Chargement…</p>
       ) : accounts.length === 0 ? (
