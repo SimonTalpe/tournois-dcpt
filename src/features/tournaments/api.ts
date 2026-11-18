@@ -8,6 +8,7 @@ import type {
   Match,
   Player,
   Pool,
+  PoolTiebreak,
   Round,
   Tournament,
   TournamentBundle,
@@ -76,8 +77,22 @@ export async function loadTournament(id: string): Promise<TournamentBundle | nul
   const players = playerIds.size
     ? (check(await client.from('players').select('id, profile_id, full_name').in('id', [...playerIds])) as Player[])
     : []
+  const poolRows = check(pools) as Pool[]
+  const tiebreaks = poolRows.length
+    ? (check(
+        await client
+          .from('pool_tiebreaks')
+          .select('id, pool_id, player_ids, ranking, result_by, result_by_admin, result_first_at, result_at')
+          .in(
+            'pool_id',
+            poolRows.map((p) => p.id),
+          ),
+      ) as PoolTiebreak[])
+    : []
   // Auteurs des résultats : les spectateurs ne lisent pas les profils (liste vide, sans erreur).
-  const authorIds = [...new Set(matchRows.map((m) => m.result_by).filter((id): id is string => Boolean(id)))]
+  const authorIds = [
+    ...new Set([...matchRows, ...tiebreaks].map((m) => m.result_by).filter((id): id is string => Boolean(id))),
+  ]
   const authorRows = authorIds.length
     ? ((await client.from('profiles').select('id, full_name').in('id', authorIds)).data ?? [])
     : []
@@ -87,7 +102,8 @@ export async function loadTournament(id: string): Promise<TournamentBundle | nul
     sets,
     authors: new Map((authorRows as { id: string; full_name: string }[]).map((p) => [p.id, p.full_name])),
     players: new Map(players.map((p) => [p.id, p])),
-    pools: check(pools) as Pool[],
+    pools: poolRows,
+    tiebreaks,
     rounds: check(rounds) as Round[],
     matches: matchRows,
   }
@@ -311,4 +327,19 @@ export async function submitResult(
 
 export async function clearResult(matchId: string): Promise<void> {
   check(await db().rpc('clear_match_result', { p_match_id: matchId }))
+}
+
+// ---------------------------------------------------------------- Départages et phase finale
+
+/** Départage : classement complet (du 1er au dernier) d'un groupe de joueurs à égalité. */
+export async function submitTiebreak(poolId: string, ranking: string[]): Promise<void> {
+  check(await db().rpc('submit_pool_tiebreak', { p_pool_id: poolId, p_ranking: ranking }))
+}
+
+export async function generateFinalPhase(tournamentId: string, draw: DrawResult): Promise<void> {
+  check(await db().rpc('admin_generate_final_phase', { p_tournament_id: tournamentId, p_plan: draw.plan }))
+}
+
+export async function resetFinalPhase(tournamentId: string): Promise<void> {
+  check(await db().rpc('admin_reset_final_phase', { p_tournament_id: tournamentId }))
 }

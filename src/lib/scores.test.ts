@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { checkMiniPongSets, checkSet, maxSets, parseSetRows, resultRights, setsWon, type ResultContext } from './scores.ts'
+import {
+  checkMiniPongSets,
+  checkSet,
+  maxSets,
+  parseSetRows,
+  resultRights,
+  setsWon,
+  tiebreakRights,
+  type ResultContext,
+} from './scores.ts'
 
 describe('checkSet', () => {
   it('accepte les sets valides', () => {
@@ -125,5 +134,28 @@ describe('resultRights', () => {
     expect(resultRights(pending, alice, 'finished', now).canEdit).toBe(false)
     expect(resultRights(pending, admin, 'finished', now).canEdit).toBe(true)
     expect(resultRights({ ...pending, awayPlayerId: null }, admin, 'in_progress', now).canEdit).toBe(false)
+  })
+})
+
+describe('tiebreakRights', () => {
+  const now = new Date('2026-12-01T12:00:00Z')
+  const alice = { isAdmin: false, isActivePlayer: true, profileId: 'alice', playerId: 'pa' }
+  const admin = { isAdmin: true, isActivePlayer: true, profileId: 'sim', playerId: null }
+  const group = ['pa', 'pb', 'pc']
+  const ago = (minutes: number) => new Date(now.getTime() - minutes * 60_000).toISOString()
+
+  it('fléchettes : joueur concerné ou admin ; mini-pong : admin seul', () => {
+    expect(tiebreakRights('darts', group, null, alice, now).canEdit).toBe(true)
+    expect(tiebreakRights('darts', ['pb', 'pc'], null, alice, now).canEdit).toBe(false)
+    expect(tiebreakRights('mini_pong', group, null, alice, now).canEdit).toBe(false)
+    expect(tiebreakRights('mini_pong', group, null, admin, now).canEdit).toBe(true)
+  })
+
+  it('correction : l’auteur pendant 5 minutes', () => {
+    const mine = { resultBy: 'alice', resultByAdmin: false, resultFirstAt: ago(2) }
+    expect(tiebreakRights('darts', group, mine, alice, now).canEdit).toBe(true)
+    expect(tiebreakRights('darts', group, { ...mine, resultFirstAt: ago(6) }, alice, now).canEdit).toBe(false)
+    expect(tiebreakRights('darts', group, { ...mine, resultBy: 'bob' }, alice, now).canEdit).toBe(false)
+    expect(tiebreakRights('darts', group, { ...mine, resultBy: 'sim', resultByAdmin: true }, alice, now).canEdit).toBe(false)
   })
 })

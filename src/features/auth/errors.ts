@@ -41,6 +41,10 @@ const MESSAGES_BY_DB_ERROR: Record<string, string> = {
   RESULT_LOCKED: 'Ce résultat ne peut plus être modifié par toi (délai de 5 minutes dépassé ou saisi par un autre) : contacte l’admin.',
   NEXT_MATCH_PLAYED: 'Le match suivant a déjà été joué : efface d’abord son résultat pour changer le vainqueur de celui-ci.',
   ROUND_LOCKED: 'Un match de ce tour a déjà été joué : son format de jeu ne peut plus changer.',
+  INVALID_TIEBREAK: 'Départage invalide : classe tous les joueurs à égalité de cette poule, chacun une seule fois.',
+  POOL_NOT_FINISHED: 'Tous les matchs de poule ne sont pas encore joués.',
+  FINAL_PHASE_EXISTS:
+    'La phase finale est générée : les résultats de poule sont figés. Annule la phase finale (Gestion) pour les modifier.',
   NOT_NAME_ONLY: 'Ce joueur est déjà lié à un compte. Recharge la page.',
   MERGE_CONFLICT:
     "Ce compte et ce nom seul jouent dans un même tournoi : fusion impossible. Remplace d'abord l'un des deux dans ce tournoi.",
