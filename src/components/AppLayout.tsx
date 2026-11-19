@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { to: '/accueil', label: 'Accueil', icon: '🏠', playersOnly: false },
   { to: '/tournois', label: 'Tournois', icon: '🏆', playersOnly: false },
   { to: '/annonces', label: 'Annonces', icon: '📣', playersOnly: false },
+  { to: '/compteur', label: 'Compteur', icon: '🎯', playersOnly: false },
   { to: '/profil', label: 'Profil', icon: '👤', playersOnly: true },
 ] as const
 
@@ -104,7 +105,7 @@ function Layout() {
 
       <nav
         className={`fixed inset-x-0 bottom-0 z-10 grid border-t border-court/20 bg-white pb-[env(safe-area-inset-bottom)] md:hidden ${
-          items.length === 4 ? 'grid-cols-4' : 'grid-cols-3'
+          items.length === 5 ? 'grid-cols-5' : items.length === 4 ? 'grid-cols-4' : 'grid-cols-3'
         }`}
         aria-label="Menu principal"
       >
