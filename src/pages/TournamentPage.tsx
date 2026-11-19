@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { DemoModeNotice, Notice } from '../components/ui.tsx'
 import { isAdmin, useAuth } from '../features/auth/AuthContext.ts'
@@ -6,6 +6,7 @@ import { loadTournament } from '../features/tournaments/api.ts'
 import { BracketView } from '../features/tournaments/BracketView.tsx'
 import { PoolsView } from '../features/tournaments/PoolsView.tsx'
 import { MatchDialog, type Viewer } from '../features/tournaments/MatchDialog.tsx'
+import { useLiveTournament, type LiveContext } from '../features/tournaments/useLiveTournament.ts'
 import { TournamentAdmin } from '../features/tournaments/TournamentAdmin.tsx'
 import {
   DISCIPLINE_ICONS,
@@ -40,6 +41,29 @@ export function TournamentPage() {
     // oxlint-disable-next-line react/set-state-in-effect -- l'état n'est modifié qu'après la réponse de Supabase
     void reload()
   }, [reload, auth.demoMode])
+
+  // Temps réel : rechargement discret (une erreur passagère ne remplace pas la page affichée).
+  const [refreshFailed, setRefreshFailed] = useState(false)
+  const refresh = useCallback(async () => {
+    try {
+      setBundle(await loadTournament(tournamentId))
+      setRefreshFailed(false)
+    } catch {
+      setRefreshFailed(true)
+    }
+  }, [tournamentId])
+  const liveContext = useMemo<LiveContext | null>(
+    () =>
+      bundle && !auth.demoMode
+        ? {
+            tournamentId: bundle.tournament.id,
+            poolIds: new Set(bundle.pools.map((p) => p.id)),
+            roundIds: new Set(bundle.rounds.map((r) => r.id)),
+          }
+        : null,
+    [bundle, auth.demoMode],
+  )
+  const live = useLiveTournament(liveContext, () => void refresh())
 
   if (auth.demoMode) return <DemoModeNotice />
   if (error) return <Notice tone="error">{error}</Notice>
@@ -95,9 +119,21 @@ export function TournamentPage() {
           <span aria-hidden="true">{DISCIPLINE_ICONS[tournament.discipline]}</span>
           {tournament.name}
         </h1>
-        <p className="text-sm text-ink/60">
-          {DISCIPLINE_LABELS[tournament.discipline]} · {FORMAT_LABELS[tournament.format]} ·{' '}
-          <span className="font-semibold">{STATUS_LABELS[tournament.status]}</span>
+        <p className="flex flex-wrap items-center gap-x-2 text-sm text-ink/60">
+          <span>
+            {DISCIPLINE_LABELS[tournament.discipline]} · {FORMAT_LABELS[tournament.format]} ·{' '}
+            <span className="font-semibold">{STATUS_LABELS[tournament.status]}</span>
+          </span>
+          {live === 'live' && !refreshFailed ? (
+            <span className="inline-flex items-center gap-1 text-xs text-court" title="Scores et tableaux mis à jour automatiquement">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-court" aria-hidden="true" />
+              En direct
+            </span>
+          ) : live === 'connecting' && !refreshFailed ? null : (
+            <button type="button" onClick={() => void refresh()} className="text-xs text-clay underline">
+              Mise à jour automatique interrompue — rafraîchir
+            </button>
+          )}
         </p>
         {tournament.description && <p className="pt-2 whitespace-pre-line">{tournament.description}</p>}
       </header>
