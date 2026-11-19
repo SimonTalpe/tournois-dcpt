@@ -242,6 +242,60 @@ describe('classement de poule — fléchettes', () => {
   })
 })
 
+describe('classement de poule — fléchettes en manches', () => {
+  /** Match de fléchettes joué en manches (score du point de vue de `home`). */
+  const legs = (home: string, away: string, h: number, a: number): StandingMatch => ({
+    home,
+    away,
+    status: 'played',
+    winner: h > a ? home : away,
+    sets: [],
+    legs: { home: h, away: a },
+  })
+  // Victoires : a 2, b 2, c 2, d 0 (même cycle que ci-dessus), manches différentes.
+  const pool = ['a', 'b', 'c', 'd']
+  const matches = [
+    legs('a', 'b', 2, 0), // a +2, b -2
+    legs('c', 'd', 2, 1), // c +1, d -1
+    legs('a', 'c', 1, 2), // a -1, c +1
+    legs('b', 'd', 2, 0), // b +2, d -2
+    legs('a', 'd', 2, 1), // a +1, d -1
+    legs('b', 'c', 2, 1), // b +1, c -1
+  ]
+  // Différence de manches : a +2, b +1, c +1, d -4.
+
+  it('à égalité de victoires, la différence de manches départage', () => {
+    const result = computePoolStanding(pool, matches, 'darts', 1)
+    expect(order(result)).toEqual(['a', 'b', 'c', 'd'])
+    expect(ranks(result)).toEqual([1, 2, 2, 4])
+    expect(result.rows[0]).toMatchObject({ legsFor: 5, legsAgainst: 3 })
+    expect(result.pendingTies).toEqual([])
+  })
+
+  it('égalité restante (mêmes victoires et même différence) : partie de départage', () => {
+    const result = computePoolStanding(pool, matches, 'darts', 2)
+    expect(result.pendingTies).toEqual([['b', 'c']])
+    const resolved = computePoolStanding(pool, matches, 'darts', 2, new Map([[groupKey(['b', 'c']), { ranking: ['c', 'b'] }]]))
+    expect(order(resolved)).toEqual(['a', 'c', 'b', 'd'])
+    expect(resolved.pendingTies).toEqual([])
+  })
+
+  it('forfait : victoire sans manches', () => {
+    const result = computePoolStanding(
+      ['a', 'b', 'c'],
+      [
+        { home: 'a', away: 'b', status: 'walkover', winner: 'a', sets: [], legs: null },
+        legs('b', 'c', 3, 0),
+        legs('c', 'a', 3, 2),
+      ],
+      'darts',
+      1,
+    )
+    // Victoires : a 1, b 1, c 1 ; manches : b +3, a -1, c -2.
+    expect(order(result)).toEqual(['b', 'a', 'c'])
+  })
+})
+
 describe('classement de poule — joueur remplacé en cours de poule', () => {
   it('ses matchs joués comptent pour ses adversaires ; le remplaçant garde ses propres matchs', () => {
     // x a perdu contre a, puis a été remplacé par y.

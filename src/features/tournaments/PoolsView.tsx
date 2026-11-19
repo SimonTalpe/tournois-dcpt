@@ -69,7 +69,7 @@ export function PoolsView({ bundle, highlightPlayerId, onOpenMatch, viewer, onSa
         {qualifiers} qualifié{qualifiers > 1 ? 's' : ''} par poule
         {isMiniPong
           ? ' · égalité : confrontation directe, puis différence de sets, puis de points'
-          : ' · égalité : partie de départage à plusieurs'}
+          : ' · égalité : différence de manches, puis partie de départage à plusieurs'}
       </p>
       <div className="grid gap-3 md:grid-cols-2">
         {standings.map(({ pool, result, tiebreaks }) => {
@@ -101,6 +101,11 @@ export function PoolsView({ bundle, highlightPlayerId, onOpenMatch, viewer, onSa
                       <th className="px-1 py-1 text-center font-medium" title="Défaites">
                         D
                       </th>
+                      {!isMiniPong && (
+                        <th className="px-1 py-1 text-center font-medium" title="Différence de manches">
+                          Man.
+                        </th>
+                      )}
                       {isMiniPong && (
                         <>
                           <th className="px-1 py-1 text-center font-medium" title="Différence de sets">
@@ -135,6 +140,9 @@ export function PoolsView({ bundle, highlightPlayerId, onOpenMatch, viewer, onSa
                           <td className="px-1 py-1.5 text-center tabular-nums">{row.played}</td>
                           <td className="px-1 py-1.5 text-center font-semibold tabular-nums">{row.wins}</td>
                           <td className="px-1 py-1.5 text-center tabular-nums">{row.losses}</td>
+                          {!isMiniPong && (
+                            <td className="px-1 py-1.5 text-center tabular-nums">{signed(row.legsFor - row.legsAgainst)}</td>
+                          )}
                           {isMiniPong && (
                             <>
                               <td className="px-1 py-1.5 text-center tabular-nums">{signed(row.setsFor - row.setsAgainst)}</td>

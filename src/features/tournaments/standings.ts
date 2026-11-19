@@ -20,6 +20,7 @@ export function poolStandings(bundle: TournamentBundle): PoolStanding[] {
           status: m.status,
           winner: m.winner_player_id,
           sets: sets.get(m.id) ?? [],
+          legs: m.home_legs !== null && m.away_legs !== null ? { home: m.home_legs, away: m.away_legs } : null,
         })),
       tournament.discipline,
       tournament.qualifiers_per_pool ?? 0,
