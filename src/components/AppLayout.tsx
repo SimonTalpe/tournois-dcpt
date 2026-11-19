@@ -3,6 +3,7 @@ import { NotificationBell } from '../features/announcements/NotificationBell.tsx
 import { useNotifications } from '../features/announcements/NotificationsContext.ts'
 import { NotificationsProvider } from '../features/announcements/NotificationsProvider.tsx'
 import { isAdmin, isPlayer, useAuth } from '../features/auth/AuthContext.ts'
+import { APP_VERSION } from '../lib/version.ts'
 
 const NAV_ITEMS = [
   { to: '/accueil', label: 'Accueil', icon: '🏠', playersOnly: false },
@@ -98,6 +99,7 @@ function Layout() {
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 pt-6 pb-24 md:pb-8">
         <Outlet />
+        <p className="pt-10 text-center text-[11px] text-ink/40">Version du {APP_VERSION}</p>
       </main>
 
       <nav
