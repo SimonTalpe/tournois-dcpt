@@ -19,8 +19,10 @@ export type Tournament = {
   qualifier_placement: QualifierPlacement
   third_place: boolean
   consolation: boolean
+  /** Mini-pong : sets gagnants ; fléchettes : manches gagnantes. */
   default_sets_to_win: number
   default_dart_start: number
+  default_dart_double_out: boolean
   launched_at: string | null
   created_at: string
 }
@@ -39,6 +41,7 @@ export type TournamentInput = Pick<
   | 'consolation'
   | 'default_sets_to_win'
   | 'default_dart_start'
+  | 'default_dart_double_out'
 >
 
 /** Valeurs proposées à la création d'un tournoi. */
@@ -54,6 +57,7 @@ export const EMPTY_TOURNAMENT: TournamentInput = {
   consolation: false,
   default_sets_to_win: 2,
   default_dart_start: 301,
+  default_dart_double_out: false,
 }
 
 export type Player = { id: string; profile_id: string | null; full_name: string }
@@ -68,8 +72,10 @@ export type Round = {
   bracket: BracketKind
   round_number: number
   name: string
+  /** Mini-pong : sets gagnants ; fléchettes : manches gagnantes. */
   sets_to_win: number
   dart_start: number
+  dart_double_out: boolean
 }
 
 export type Match = {
@@ -96,6 +102,9 @@ export type Match = {
   location_id: string | null
   /** Joueur déclaré forfait (statut walkover). */
   forfeit_player_id: string | null
+  /** Fléchettes : manches gagnées (match joué uniquement). */
+  home_legs: number | null
+  away_legs: number | null
 }
 
 export type Location = { id: string; name: string }
@@ -151,7 +160,18 @@ export const FORMAT_LABELS: Record<TournamentFormat, string> = {
 }
 
 /** Format de jeu d'un tour, en clair. */
-export function gameFormatLabel(discipline: Discipline, round: Pick<Round, 'sets_to_win' | 'dart_start'>): string {
-  if (discipline === 'darts') return `${round.dart_start}`
+export function gameFormatLabel(
+  discipline: Discipline,
+  round: Pick<Round, 'sets_to_win' | 'dart_start'> & Partial<Pick<Round, 'dart_double_out'>>,
+): string {
+  if (discipline === 'darts') {
+    return [
+      `${round.dart_start}`,
+      round.dart_double_out ? 'sortie double' : null,
+      round.sets_to_win > 1 ? `${round.sets_to_win} manches gagnantes` : null,
+    ]
+      .filter(Boolean)
+      .join(' · ')
+  }
   return round.sets_to_win === 1 ? '1 set gagnant' : `${round.sets_to_win} sets gagnants`
 }

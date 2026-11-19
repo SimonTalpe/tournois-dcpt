@@ -1,5 +1,9 @@
 import type { Participant } from './api.ts'
 import type { GameConfig, GameEvent } from './engine.ts'
+import type { MatchContext } from './match.ts'
+
+/** Manche terminée d'un match de tournoi (rejouable pour l'affichage et l'annulation). */
+export type PlayedLeg = { id: string; config: GameConfig; events: GameEvent[]; startedAt: string }
 
 /**
  * Partie sauvegardée sur l'appareil : un rechargement, une mise en veille ou une fermeture
@@ -17,6 +21,13 @@ export type SavedGame = {
   startedAt: string
   /** Résultat enregistré en base. */
   recorded: boolean
+  /**
+   * Match ou départage de tournoi : joueurs et format imposés, résultat reporté dans le tournoi.
+   * `id`, `config`, `events` et `startedAt` décrivent alors la manche en cours.
+   */
+  context?: MatchContext
+  /** Manches déjà jouées (match en plusieurs manches). */
+  previousLegs?: PlayedLeg[]
 }
 
 const KEY = 'mpf.darts.game'

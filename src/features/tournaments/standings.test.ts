@@ -16,6 +16,7 @@ const tournament: Tournament = {
   consolation: true,
   default_sets_to_win: 1,
   default_dart_start: 301,
+  default_dart_double_out: false,
   launched_at: null,
   created_at: '',
 }
@@ -42,6 +43,8 @@ const match = (pool: string, home: string, away: string, winner: string | null):
   scheduled_at: null,
   location_id: null,
   forfeit_player_id: null,
+  home_legs: null,
+  away_legs: null,
 })
 
 function bundle(matches: Match[], tiebreaks: TournamentBundle['tiebreaks'] = []): TournamentBundle {
@@ -58,7 +61,7 @@ function bundle(matches: Match[], tiebreaks: TournamentBundle['tiebreaks'] = [])
       { id: 'A', tournament_id: 't', label: 'A' },
       { id: 'B', tournament_id: 't', label: 'B' },
     ],
-    rounds: [{ id: 'r-pool', tournament_id: 't', bracket: 'pool', round_number: 1, name: 'Poules', sets_to_win: 1, dart_start: 301 }],
+    rounds: [{ id: 'r-pool', tournament_id: 't', bracket: 'pool', round_number: 1, name: 'Poules', sets_to_win: 1, dart_start: 301, dart_double_out: false }],
     matches,
     sets: new Map(),
     tiebreaks,

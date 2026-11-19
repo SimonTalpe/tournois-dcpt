@@ -16,6 +16,7 @@ const tournament = (id: string, over: Partial<Tournament> = {}): Tournament => (
   consolation: false,
   default_sets_to_win: 2,
   default_dart_start: 301,
+  default_dart_double_out: false,
   launched_at: '2026-12-01T00:00:00Z',
   created_at: '2026-11-30T00:00:00Z',
   ...over,
@@ -29,6 +30,7 @@ const round = (t: string, bracket: Round['bracket'], n: number, name: string): R
   name,
   sets_to_win: 2,
   dart_start: 301,
+  dart_double_out: false,
 })
 
 let seq = 0
@@ -55,6 +57,8 @@ function match(t: string, roundId: string, home: string | null, away: string | n
     scheduled_at: null,
     location_id: null,
     forfeit_player_id: null,
+    home_legs: null,
+    away_legs: null,
     ...over,
   }
 }

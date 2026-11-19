@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router'
 import { isPlayer, useAuth } from '../features/auth/AuthContext.ts'
 import { recordDartGame, type Participant } from '../features/darts/api.ts'
 import type { Dart } from '../features/darts/darts.ts'
@@ -6,6 +7,7 @@ import { applyEvent, GameError, isGameEnded, replay, type GameConfig, type GameE
 import { GameScreen } from '../features/darts/GameScreen.tsx'
 import { ResultScreen, type SaveStatus } from '../features/darts/ResultScreen.tsx'
 import { SetupScreen, type SetupValue } from '../features/darts/SetupScreen.tsx'
+import { TournamentGame } from '../features/darts/TournamentGame.tsx'
 import { loadSavedGame, newGameId, saveGame, type SavedGame } from '../features/darts/storage.ts'
 import { useWakeLock, vibrate } from '../features/darts/useWakeLock.ts'
 import { isSupabaseConfigured } from '../lib/supabase.ts'
@@ -30,6 +32,7 @@ function newGame(value: SetupValue, local: boolean): SavedGame {
 /** Onglet « Compteur » : configuration, partie, résultat. La partie vit sur l'appareil. */
 export function DartsPage() {
   const auth = useAuth()
+  const navigate = useNavigate()
   const local = !isSupabaseConfigured || auth.demoMode || !isPlayer(auth)
   const [game, setGame] = useState<SavedGame | null>(() => loadSavedGame())
   const [setup, setSetup] = useState<SetupValue>(() => ({
@@ -98,6 +101,22 @@ export function DartsPage() {
     setSetup({ participants: g.participants, start: g.config.start, doubleOut: g.config.doubleOut })
     setSaving({ kind: 'idle' })
     setGame(null)
+  }
+
+  // Partie lancée depuis un match ou un départage de tournoi.
+  if (game?.context) {
+    return (
+      <TournamentGame
+        game={game}
+        onChange={setGame}
+        onLeave={(path) => {
+          // Effacée tout de suite : la page est quittée avant l'enregistrement automatique.
+          saveGame(null)
+          setGame(null)
+          navigate(path)
+        }}
+      />
+    )
   }
 
   if (!game || !state) {

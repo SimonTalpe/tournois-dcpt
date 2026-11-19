@@ -10,6 +10,7 @@
  * Usage : node scripts/simulate-db.ts <nom_de_la_base> [nombre_de_tournois] [graine]
  * (connexion via PGHOST, PGPORT, PGUSER, PGPASSWORD)
  */
+import { randomUUID } from 'node:crypto'
 import pg from 'pg'
 import { buildLaunchDraw, type DrawConfig } from '../src/lib/draw/plan.ts'
 import { poolStandings, computeFinalPhase } from '../src/features/tournaments/standings.ts'
@@ -53,6 +54,8 @@ const stats = {
   cancellations: 0,
   reopenings: 0,
   playerForfeits: 0,
+  dartMatchesByCounter: 0,
+  dartTiebreaksByCounter: 0,
 }
 
 class Failure extends Error {}
@@ -119,13 +122,13 @@ async function loadBundle(tournamentId: string): Promise<TournamentBundle> {
     [tournamentId],
   )
   const rounds = await su<TournamentBundle['rounds'][number]>(
-    `select id, tournament_id, bracket, round_number, name, sets_to_win, dart_start from public.tournament_rounds where tournament_id = $1`,
+    `select id, tournament_id, bracket, round_number, name, sets_to_win, dart_start, dart_double_out from public.tournament_rounds where tournament_id = $1`,
     [tournamentId],
   )
   const matches = await su<Match>(
     `select id, tournament_id, round_id, pool_id, position, home_player_id, away_player_id, winner_player_id, status,
             next_match_id, next_slot, loser_next_match_id, loser_next_slot, result_by, result_by_admin,
-            result_first_at::text, result_at::text, scheduled_at::text, location_id
+            result_first_at::text, result_at::text, scheduled_at::text, location_id, home_legs, away_legs
      from public.matches where tournament_id = $1 order by position`,
     [tournamentId],
   )
@@ -183,16 +186,74 @@ function actorFor(match: Match): string {
   return candidates.length && chance(0.7) ? pick(candidates) : ADMIN
 }
 
+/** Score en manches (fléchettes) : le vainqueur a toutes les manches requises, le perdant moins. */
+function randomLegs(legsToWin: number, winnerIsHome: boolean): { home: number; away: number } {
+  const loser = Math.floor(rng() * legsToWin)
+  return winnerIsHome ? { home: legsToWin, away: loser } : { home: loser, away: legsToWin }
+}
+
 async function submit(actor: string, match: Match, discipline: string, setsToWin: number, winnerIsHome: boolean) {
   const winner = winnerIsHome ? match.home_player_id : match.away_player_id
   if (discipline === 'darts') {
-    await as(actor, `select public.submit_match_result($1, $2, null)`, [match.id, winner])
+    // Une fois sur cinq en manche unique : ancienne saisie « vainqueur seul » (site en cache).
+    if (setsToWin === 1 && chance(0.2)) await as(actor, `select public.submit_match_result($1, $2, null)`, [match.id, winner])
+    else {
+      await as(actor, `select public.submit_match_result($1, null, $2::jsonb)`, [
+        match.id,
+        JSON.stringify(randomLegs(setsToWin, winnerIsHome)),
+      ])
+    }
   } else {
     await as(actor, `select public.submit_match_result($1, null, $2::jsonb)`, [
       match.id,
       JSON.stringify(randomSets(setsToWin, winnerIsHome)),
     ])
   }
+}
+
+type LegPlayer = { player_id: string; rank: number; remaining: number; darts: number; points: number }
+
+/** Résultat d'une partie jouée au compteur entre plusieurs joueurs, classés dans l'ordre `ranking`. */
+function dartPlayers(order: string[], ranking: string[], start: number): LegPlayer[] {
+  return order.map((id) => {
+    const rank = ranking.indexOf(id) + 1
+    const finished = rank < ranking.length || ranking.length === 1
+    const remaining = finished ? 0 : 2 + Math.floor(rng() * (start - 2))
+    return { player_id: id, rank, remaining, darts: 9 + Math.floor(rng() * 30), points: start - remaining }
+  })
+}
+
+/** Match joué au compteur : manches alternant le joueur qui commence, dernière manche au vainqueur. */
+async function submitByCounter(actor: string, match: Match, round: { sets_to_win: number; dart_start: number }, winnerIsHome: boolean) {
+  const home = match.home_player_id as string
+  const away = match.away_player_id as string
+  const [winner, loser] = winnerIsHome ? [home, away] : [away, home]
+  const loserLegs = Math.floor(rng() * round.sets_to_win)
+  const order = [...Array(round.sets_to_win - 1).fill(winner), ...Array(loserLegs).fill(loser)].sort(() => rng() - 0.5)
+  order.push(winner)
+  const legs = order.map((legWinner, i) => ({
+    game_id: randomUUID(),
+    started_at: new Date(Date.now() - 60_000).toISOString(),
+    players: dartPlayers(i % 2 === 0 ? [home, away] : [away, home], [legWinner, legWinner === home ? away : home], round.dart_start),
+  }))
+  await as(actor, `select public.record_dart_match($1, $2::jsonb)`, [match.id, JSON.stringify(legs)])
+  // Nouvel essai (coupure réseau) : sans effet.
+  if (chance(0.1)) await as(actor, `select public.record_dart_match($1, $2::jsonb)`, [match.id, JSON.stringify(legs)])
+  const games = await su<{ leg_number: number; start_score: number; double_out: boolean }>(
+    `select leg_number, start_score, double_out from public.dart_games where match_id = $1 order by leg_number`,
+    [match.id],
+  )
+  const [r] = await su<{ dart_double_out: boolean }>(`select dart_double_out from public.tournament_rounds where id = $1`, [
+    match.round_id,
+  ])
+  assert(
+    games.length === legs.length && games.every((g, i) => g.leg_number === i + 1 && g.start_score === round.dart_start && g.double_out === r.dart_double_out),
+    'compteur : manches mal enregistrées',
+  )
+  const [m] = await su<Match & { home_legs: number; away_legs: number }>(`select * from public.matches where id = $1`, [match.id])
+  const expected = winnerIsHome ? [round.sets_to_win, loserLegs] : [loserLegs, round.sets_to_win]
+  assert(m.home_legs === expected[0] && m.away_legs === expected[1], 'compteur : score en manches incorrect')
+  return legs
 }
 
 /** Vérifie l'avancement d'un match joué : vainqueur et perdant à leur place (exempts de consolante compris). */
@@ -280,8 +341,8 @@ async function playTournament(index: number) {
   const [{ id: tournamentId }] = await as<{ id: string }>(
     ADMIN,
     `insert into public.tournaments (name, discipline, format, pool_count, qualifiers_per_pool, qualifier_placement,
-       third_place, consolation, default_sets_to_win, default_dart_start)
-     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, 301) returning id`,
+       third_place, consolation, default_sets_to_win, default_dart_start, default_dart_double_out)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) returning id`,
     [
       `Simulation ${index}`,
       discipline,
@@ -292,6 +353,8 @@ async function playTournament(index: number) {
       config.thirdPlace,
       config.consolation,
       1 + Math.floor(rng() * 3),
+      pick([301, 501]),
+      chance(0.5),
     ],
   )
   for (const p of players) {
@@ -317,7 +380,27 @@ async function playTournament(index: number) {
           const ranking = [...group].sort(() => rng() - 0.5)
           const concerned = group.map((p) => profileOfPlayer.get(p)).filter((p): p is string => Boolean(p))
           const actor = discipline === 'darts' && concerned.length && chance(0.7) ? pick(concerned) : ADMIN
-          await as(actor, `select public.submit_pool_tiebreak($1, $2::uuid[])`, [pool.id, ranking])
+          if (discipline === 'darts' && chance(0.5)) {
+            // Départage joué au compteur (ordre de jeu aléatoire), jusqu'au bout.
+            const poolRound = bundle.rounds.find((r) => r.bracket === 'pool') as { dart_start: number }
+            const gameId = randomUUID()
+            const players = dartPlayers([...group].sort(() => rng() - 0.5), ranking, poolRound.dart_start)
+            await as(actor, `select public.record_dart_tiebreak($1, $2, now(), $3::jsonb)`, [pool.id, gameId, JSON.stringify(players)])
+            const [linked] = await su<{ ranking: string[] }>(
+              `select t.ranking from public.dart_games g join public.pool_tiebreaks t on t.id = g.tiebreak_id where g.id = $1`,
+              [gameId],
+            )
+            assert(linked && linked.ranking.join() === ranking.join(), `${label} : départage au compteur mal enregistré`)
+            // Second téléphone : refusé.
+            await expectRefusal(
+              as(actor, `select public.record_dart_tiebreak($1, $2, now(), $3::jsonb)`, [pool.id, randomUUID(), JSON.stringify(players)]),
+              'TIEBREAK_ALREADY_SET',
+              label,
+            )
+            stats.dartTiebreaksByCounter++
+          } else {
+            await as(actor, `select public.submit_pool_tiebreak($1, $2::uuid[])`, [pool.id, ranking])
+          }
           stats.tiebreaks++
         }
       }
@@ -434,7 +517,23 @@ async function playTournament(index: number) {
       )
     }
     const homeWins = chance(0.5)
-    await submit(actor, match, discipline, round.sets_to_win, homeWins)
+    const byCounter = discipline === 'darts' && chance(0.4)
+    if (byCounter) {
+      const legs = await submitByCounter(actor, match, round, homeWins)
+      stats.dartMatchesByCounter++
+      // Second téléphone sur le même match : le premier résultat validé est conservé.
+      const other = actorFor(match)
+      await expectRefusal(
+        as(other, `select public.record_dart_match($1, $2::jsonb)`, [
+          match.id,
+          JSON.stringify(legs.map((l) => ({ ...l, game_id: randomUUID() }))),
+        ]),
+        'MATCH_ALREADY_PLAYED',
+        label,
+      )
+    } else {
+      await submit(actor, match, discipline, round.sets_to_win, homeWins)
+    }
     if (actor === ADMIN) stats.byAdmin++
     else stats.byPlayer++
     stats.matches++
@@ -445,6 +544,8 @@ async function playTournament(index: number) {
       await submit(actor, match, discipline, round.sets_to_win, !homeWins)
       stats.corrections++
       await checkAdvancement(match.id)
+      const linked = await su(`select 1 from public.dart_games where match_id = $1`, [match.id])
+      assert(linked.length === 0, 'correction manuelle : manches du compteur restées liées au match')
     } else if (chance(0.05)) {
       await as(actor, `select public.clear_match_result($1)`, [match.id])
       stats.clears++
@@ -473,6 +574,19 @@ async function playTournament(index: number) {
     assert(['played', 'bye', 'walkover', 'cancelled'].includes(m.status), `${label} : match resté « ${m.status} »`)
     if (m.status !== 'cancelled') assert(m.winner_player_id, `${label} : match « ${m.status} » sans vainqueur`)
     if (m.status === 'cancelled') assert(m.pool_id, `${label} : match de tableau annulé`)
+    // Score en manches : uniquement pour un match de fléchettes joué, cohérent avec le vainqueur et le format.
+    const legs = m as Match & { home_legs: number | null; away_legs: number | null }
+    if (discipline === 'darts' && m.status === 'played') {
+      const toWin = roundOf.get(m.round_id)?.sets_to_win
+      const winnerLegs = m.winner_player_id === m.home_player_id ? legs.home_legs : legs.away_legs
+      const loserLegs = m.winner_player_id === m.home_player_id ? legs.away_legs : legs.home_legs
+      assert(winnerLegs === toWin && loserLegs !== null && loserLegs < (toWin as number), `${label} : score en manches incohérent`)
+      const linked = await su(`select 1 from public.dart_games where match_id = $1`, [m.id])
+      assert(linked.length === 0 || linked.length === (legs.home_legs as number) + (legs.away_legs as number),
+        `${label} : manches du compteur et score du match différents`)
+    } else {
+      assert(legs.home_legs === null && legs.away_legs === null, `${label} : score en manches sur un match ${m.status}`)
+    }
   }
   const main = end.rounds.filter((r) => r.bracket === 'main')
   const lastMain = main.reduce((a, b) => (a.round_number > b.round_number ? a : b))

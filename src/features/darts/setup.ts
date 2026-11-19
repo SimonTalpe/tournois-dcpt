@@ -15,7 +15,11 @@ export function normalizeName(text: string): string {
 export function searchPeople(people: DartPerson[], participants: Participant[], query: string, limit = 6): DartPerson[] {
   const taken = new Set(
     participants.flatMap((p) =>
-      p.ref.kind === 'account' ? [`account:${p.ref.profileId}`] : p.ref.kind === 'name_only' ? [`name_only:${p.ref.playerId}`] : [],
+      p.ref.kind === 'account'
+        ? [`account:${p.ref.profileId}`]
+        : p.ref.kind === 'name_only' || p.ref.kind === 'player'
+          ? [`name_only:${p.ref.playerId}`]
+          : [],
     ),
   )
   const q = normalizeName(query)

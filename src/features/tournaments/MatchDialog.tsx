@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router'
 import { Notice, SecondaryButton } from '../../components/ui.tsx'
+import { prepareTournamentGame } from '../darts/launch.ts'
+import { MatchLegsDetail } from '../darts/MatchLegsDetail.tsx'
 import { canSchedule } from '../../lib/schedule.ts'
 import { checkMiniPongSets, maxSets, parseSetRows, resultRights, setsWon, type Side } from '../../lib/scores.ts'
 import { cancelMatch, clearResult, reopenMatch, setWalkover, submitResult, swapHomeAway } from './api.ts'
@@ -54,6 +57,11 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
     })),
   )
   const [dartWinner, setDartWinner] = useState<string | null>(match.winner_player_id)
+  /** Fléchettes en plusieurs manches : manches gagnées par le perdant. */
+  const [loserLegs, setLoserLegs] = useState(() =>
+    match.home_legs !== null && match.away_legs !== null ? Math.min(match.home_legs, match.away_legs) : 0,
+  )
+  const navigate = useNavigate()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -84,7 +92,10 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
   function save() {
     if (isDarts) {
       if (!dartWinner) return setError('Choisis le vainqueur.')
-      return run(() => submitResult(match.id, { winnerPlayerId: dartWinner }))
+      const winnerIsHome = dartWinner === match.home_player_id
+      const legs = winnerIsHome ? { home: setsToWin, away: loserLegs } : { home: loserLegs, away: setsToWin }
+      if (setsToWin > 1 && !window.confirm(`Enregistrer la victoire de ${name(dartWinner)} (${legs.home}-${legs.away}) ?`)) return
+      return run(() => submitResult(match.id, { legs }))
     }
     if ('error' in parsed) return setError(parsed.error)
     const checked = checkMiniPongSets(parsed.sets, setsToWin)
@@ -109,6 +120,26 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
     }
   }
 
+  /** Compteur de fléchettes avec les joueurs et le format du match (le joueur à domicile commence). */
+  function playWithCounter() {
+    if (!match.home_player_id || !match.away_player_id || !round) return
+    const ready = prepareTournamentGame({
+      kind: 'match',
+      tournamentId: tournament.id,
+      tournamentName: tournament.name,
+      label: number ? `${round.name} · M${number}` : pool ? `Poule ${pool.label}` : round.name,
+      matchId: match.id,
+      legsToWin: round.sets_to_win,
+      start: round.dart_start === 501 ? 501 : 301,
+      doubleOut: round.dart_double_out,
+      players: [
+        { playerId: match.home_player_id, name: name(match.home_player_id) },
+        { playerId: match.away_player_id, name: name(match.away_player_id) },
+      ],
+    })
+    if (ready) navigate('/compteur')
+  }
+
   function clear() {
     if (!window.confirm('Effacer ce résultat ? Le match redevient « à jouer ».')) return
     return run(() => clearResult(match.id))
@@ -118,7 +149,8 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
   const decided = played || match.status === 'walkover'
   const canAct = viewer.isAdmin && ['in_progress', 'finished'].includes(tournament.status)
   const poolLocked = Boolean(match.pool_id) && rounds.some((r) => r.bracket !== 'pool')
-  const won = setsWon(existingSets)
+  const won = isDarts ? { home: match.home_legs ?? 0, away: match.away_legs ?? 0 } : setsWon(existingSets)
+  const showDartLegs = isDarts && (match.home_legs ?? 0) + (match.away_legs ?? 0) > 1
   const author = match.result_by ? authors.get(match.result_by) : undefined
 
   return (
@@ -166,7 +198,7 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
                   {side === 'home' && <span className="ml-2 text-[10px] font-normal text-ink/40 uppercase">dom.</span>}
                 </span>
                 {played && (
-                  <span className="shrink-0">{isDarts ? (isWinner ? 'Vainqueur' : '') : won[side]}</span>
+                  <span className="shrink-0">{isDarts && !showDartLegs ? (isWinner ? 'Vainqueur' : '') : won[side]}</span>
                 )}
                 {isForfeit && <span className="shrink-0 text-xs font-semibold text-clay uppercase">forfait</span>}
               </li>
@@ -191,6 +223,14 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
                 Sets :{' '}
                 <span className="font-semibold">{existingSets.map((s) => `${s.home}-${s.away}`).join(' · ')}</span>
               </p>
+            )}
+            {isDarts && viewer.isActivePlayer && match.home_player_id && match.away_player_id && (
+              <MatchLegsDetail
+                matchId={match.id}
+                resultAt={match.result_at}
+                playerIds={[match.home_player_id, match.away_player_id]}
+                name={(id) => name(id)}
+              />
             )}
             {match.result_at && (
               <p className="text-xs text-ink/50">
@@ -285,6 +325,22 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
             {rights.deadline && (
               <p className="text-xs text-ink/60">Correction possible jusqu'à {timeFormat.format(rights.deadline)}.</p>
             )}
+            {isDarts && match.status === 'pending' && (
+              <div className="space-y-1">
+                <button
+                  type="button"
+                  onClick={playWithCounter}
+                  disabled={busy}
+                  className="w-full rounded-xl bg-ball px-4 py-3 font-semibold text-court shadow-sm transition active:scale-[0.98] disabled:opacity-60"
+                >
+                  🎯 Jouer au compteur
+                </button>
+                <p className="text-center text-xs text-ink/60">
+                  {round ? gameFormatLabel(tournament.discipline, round) : ''} · {name(match.home_player_id)} commence.
+                  Ou saisis le résultat à la main :
+                </p>
+              </div>
+            )}
             {isDarts ? (
               <div className="grid gap-2">
                 {(['home', 'away'] as const).map((side) => {
@@ -303,6 +359,28 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
                     </button>
                   )
                 })}
+                {setsToWin > 1 && (
+                  <fieldset className="space-y-1">
+                    <legend className="text-sm text-ink/70">
+                      Manches gagnées par {dartWinner ? `l'adversaire de ${name(dartWinner)}` : 'le perdant'}
+                    </legend>
+                    <div className="flex gap-2">
+                      {Array.from({ length: setsToWin }, (_, n) => (
+                        <button
+                          key={n}
+                          type="button"
+                          aria-pressed={loserLegs === n}
+                          onClick={() => setLoserLegs(n)}
+                          className={`flex-1 rounded-xl border py-2 font-semibold tabular-nums ${
+                            loserLegs === n ? 'border-court bg-court text-chalk' : 'border-ink/20 hover:bg-court/10'
+                          }`}
+                        >
+                          {setsToWin}-{n}
+                        </button>
+                      ))}
+                    </div>
+                  </fieldset>
+                )}
               </div>
             ) : (
               <div className="space-y-2">

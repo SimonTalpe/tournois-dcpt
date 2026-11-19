@@ -16,7 +16,7 @@ describe('champs envoyés à la base', () => {
 
   it('tournoi lancé : seuls nom, description, formats par défaut et placement', () => {
     expect(Object.keys(pickTournamentInput(row, true)).sort()).toEqual(
-      ['default_dart_start', 'default_sets_to_win', 'description', 'name', 'qualifier_placement'].sort(),
+      ['default_dart_double_out', 'default_dart_start', 'default_sets_to_win', 'description', 'name', 'qualifier_placement'].sort(),
     )
   })
 })

@@ -32,8 +32,8 @@ insert into public.players (id, full_name) values
   (:a2, 'A deux'), (:a3, 'A trois'), (:b1, 'B un'), (:b2, 'B deux'), (:b3, 'B trois');
 
 -- Fléchettes, 2 poules de 3, 1 qualifié par poule.
-insert into public.tournaments (id, name, discipline, format, status, pool_count, qualifiers_per_pool)
-values (:t1, 'Fléchettes à poules', 'darts', 'pools_knockout', 'in_progress', 2, 1);
+insert into public.tournaments (id, name, discipline, format, status, pool_count, qualifiers_per_pool, default_sets_to_win)
+values (:t1, 'Fléchettes à poules', 'darts', 'pools_knockout', 'in_progress', 2, 1, 1);
 insert into public.pools (id, tournament_id, label) values (:pool_a, :t1, 'A'), (:pool_b, :t1, 'B');
 insert into public.tournament_entries (tournament_id, player_id, pool_id) values
   (:t1, :a1, :pool_a), (:t1, :a2, :pool_a), (:t1, :a3, :pool_a),

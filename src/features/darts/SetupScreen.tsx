@@ -19,6 +19,7 @@ const KIND_LABELS: Record<Participant['ref']['kind'], string | null> = {
   name_only: 'nom seul',
   new: 'nouveau',
   guest: null,
+  player: null,
 }
 
 /** Configuration d'une partie : joueurs (ordre de jeu), 301/501, sortie sur double. */

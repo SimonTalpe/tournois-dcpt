@@ -12,6 +12,8 @@ type Props = {
   config: GameConfig
   state: GameState
   canUndo: boolean
+  /** Match de tournoi : « Arrêter » abandonne la partie (rien n'est enregistré, le match reste à jouer). */
+  abandon?: boolean
   onDart: (dart: Dart) => void
   onUndo: () => void
   onContinue: () => void
@@ -21,7 +23,7 @@ type Props = {
 const SEGMENTS = Array.from({ length: 20 }, (_, i) => i + 1)
 
 /** Écran de jeu : tableau des scores, volée en cours, finish conseillé, pavé de saisie. */
-export function GameScreen({ config, state, canUndo, onDart, onUndo, onContinue, onStop }: Props) {
+export function GameScreen({ config, state, canUndo, abandon = false, onDart, onUndo, onContinue, onStop }: Props) {
   const [multiplier, setMultiplier] = useState<Multiplier>(1)
   const [confirmStop, setConfirmStop] = useState(false)
   const currentRef = useRef<HTMLLIElement>(null)
@@ -113,7 +115,7 @@ export function GameScreen({ config, state, canUndo, onDart, onUndo, onContinue,
               onClick={() => setConfirmStop(true)}
               className="rounded-lg border border-clay/40 px-2 py-1 text-xs font-medium text-clay hover:bg-clay/10"
             >
-              ⏹ Arrêter
+              {abandon ? '✕ Abandonner' : '⏹ Arrêter'}
             </button>
           </div>
           <div className="mt-1 flex items-end justify-between gap-3">
@@ -215,11 +217,13 @@ export function GameScreen({ config, state, canUndo, onDart, onUndo, onContinue,
       )}
 
       {confirmStop && state.phase === 'playing' && (
-        <Dialog title="Arrêter la partie ?">
+        <Dialog title={abandon ? 'Abandonner la partie ?' : 'Arrêter la partie ?'}>
           <p className="text-sm text-ink/70">
-            {state.finishedCount === 0
-              ? 'Aucun joueur n’a terminé : la partie sera annulée et rien ne sera enregistré.'
-              : 'Le classement sera établi en l’état : ceux qui ont fini, puis les autres selon leur score restant.'}
+            {abandon
+              ? 'Rien ne sera enregistré : le match reste à jouer (ou à saisir à la main).'
+              : state.finishedCount === 0
+                ? 'Aucun joueur n’a terminé : la partie sera annulée et rien ne sera enregistré.'
+                : 'Le classement sera établi en l’état : ceux qui ont fini, puis les autres selon leur score restant.'}
           </p>
           <div className="space-y-2">
             <button
@@ -230,7 +234,7 @@ export function GameScreen({ config, state, canUndo, onDart, onUndo, onContinue,
               }}
               className="w-full rounded-xl bg-clay py-3 font-semibold text-white"
             >
-              {state.finishedCount === 0 ? 'Annuler la partie' : 'Arrêter et classer'}
+              {abandon ? 'Abandonner' : state.finishedCount === 0 ? 'Annuler la partie' : 'Arrêter et classer'}
             </button>
             <button
               type="button"

@@ -1,6 +1,6 @@
 import { formatSchedule } from '../../lib/schedule.ts'
 import { setsWon, type SetScore } from '../../lib/scores.ts'
-import { placeholderLabel, type SlotSource } from './display.ts'
+import { dartLegsScore, placeholderLabel, type SlotSource } from './display.ts'
 import type { Discipline, Match, Player } from './types.ts'
 
 type Props = {
@@ -35,7 +35,7 @@ export function MatchCard({
   const isBye = match.status === 'bye'
   const played = match.status === 'played'
   const isWalkover = match.status === 'walkover'
-  const won = played && sets?.length ? setsWon(sets) : null
+  const won = played && sets?.length ? setsWon(sets) : dartLegsScore(match)
 
   const row = (slot: 'home' | 'away') => {
     const playerId = slot === 'home' ? match.home_player_id : match.away_player_id
@@ -62,7 +62,7 @@ export function MatchCard({
         <span className="flex shrink-0 items-center gap-1.5">
           {slot === 'home' && !isBye && <span className="text-[10px] text-ink/40 uppercase">dom.</span>}
           {won && <span className="w-4 text-center tabular-nums">{won[slot]}</span>}
-          {played && discipline === 'darts' && isWinner && <span aria-label="vainqueur">✓</span>}
+          {played && discipline === 'darts' && !won && isWinner && <span aria-label="vainqueur">✓</span>}
           {isWalkover && playerId && playerId === match.forfeit_player_id && (
             <span className="text-[10px] font-semibold text-clay uppercase">forfait</span>
           )}

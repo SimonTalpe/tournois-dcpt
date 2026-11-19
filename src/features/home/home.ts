@@ -1,5 +1,5 @@
 import { setsWon } from '../../lib/scores.ts'
-import { numberMatches, placeholderLabel, slotSources } from '../tournaments/display.ts'
+import { dartLegsScore, numberMatches, placeholderLabel, slotSources } from '../tournaments/display.ts'
 import type { Match, Tournament, TournamentBundle } from '../tournaments/types.ts'
 
 /**
@@ -110,7 +110,7 @@ export function recentResults(bundles: readonly TournamentBundle[], limit = 5): 
         roundLabel: roundLabel(bundle, match, numbers),
         home: name(match.home_player_id),
         away: name(match.away_player_id),
-        score: match.status === 'played' && sets?.length ? setsWon(sets) : null,
+        score: match.status === 'played' && sets?.length ? setsWon(sets) : dartLegsScore(match),
         forfeitName: match.status === 'walkover' ? name(match.forfeit_player_id) : null,
       })
     }
