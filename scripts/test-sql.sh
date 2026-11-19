@@ -16,6 +16,8 @@ trap 'dropdb --if-exists "$DB"' EXIT
   if not exists (select from pg_roles where rolname = 'authenticated') then create role authenticated nologin; end if;
 end \$\$;"
 sed '/^create role /d' supabase/tests/00_fake_supabase_auth.sql | "${PSQL[@]}" -d "$DB"
+# Publication du temps réel (créée d'office, vide, par Supabase)
+"${PSQL[@]}" -d "$DB" -c "create publication supabase_realtime;"
 
 for f in supabase/migrations/*.sql; do
   echo "→ migration $(basename "$f")"
