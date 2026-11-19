@@ -7,7 +7,8 @@
  * - Mini-pong, à égalité de victoires : confrontations directes entre les joueurs à égalité
  *   (appliquées à nouveau dans chaque sous-groupe), puis différence de sets, puis différence de points
  *   (sur tous les matchs de poule).
- * - Fléchettes, à égalité de victoires : partie de départage à plusieurs donnant un classement complet.
+ * - Fléchettes, à égalité de victoires : différence de manches (sur tous les matchs de poule ; un forfait
+ *   ne donne pas de manches), puis partie de départage à plusieurs donnant un classement complet.
  * - Égalité restante (fléchettes toujours ; mini-pong si égalité parfaite) : départage saisi
  *   (partie à plusieurs, ou décision de l'admin) — demandé seulement si l'égalité chevauche la limite
  *   des qualifiés. Sinon les joueurs restent « ex aequo ».
@@ -20,6 +21,8 @@ export type StandingMatch = {
   status: 'pending' | 'bye' | 'played' | 'walkover' | 'cancelled'
   winner: string | null
   sets: readonly SetScore[]
+  /** Fléchettes : manches gagnées (match joué). */
+  legs?: { home: number; away: number } | null
 }
 
 /** Départage saisi : classement complet d'un groupe de joueurs à égalité. */
@@ -34,6 +37,8 @@ export type StandingRow = {
   setsAgainst: number
   pointsFor: number
   pointsAgainst: number
+  legsFor: number
+  legsAgainst: number
   /** Rang (1 = premier). Des joueurs ex aequo partagent le même rang. */
   rank: number
   /** Départagé par une partie / décision saisie. */
@@ -65,6 +70,8 @@ function emptyRow(playerId: string): StandingRow {
     setsAgainst: 0,
     pointsFor: 0,
     pointsAgainst: 0,
+    legsFor: 0,
+    legsAgainst: 0,
     rank: 0,
     byTiebreak: false,
   }
@@ -105,6 +112,10 @@ export function computePoolStanding(
       if (s[side] > s[other]) row.setsFor++
       else row.setsAgainst++
     }
+    if (m.legs) {
+      row.legsFor += m.legs[side]
+      row.legsAgainst += m.legs[other]
+    }
   }
   for (const m of counted) {
     tally(rows.get(m.home), 'home', m)
@@ -124,7 +135,8 @@ export function computePoolStanding(
 
   /** Groupes successifs (meilleur d'abord) ; un groupe de plus d'un joueur reste à égalité. */
   const separate = (group: string[]): string[][] => {
-    if (group.length === 1 || discipline === 'darts') return [group]
+    if (group.length === 1) return [group]
+    if (discipline === 'darts') return partitionBy(group, (id) => row(id).legsFor - row(id).legsAgainst)
     const byH2h = partitionBy(group, (id) => headToHeadWins(id, group))
     if (byH2h.length > 1) return byH2h.flatMap(separate)
     const bySets = partitionBy(group, (id) => row(id).setsFor - row(id).setsAgainst)
