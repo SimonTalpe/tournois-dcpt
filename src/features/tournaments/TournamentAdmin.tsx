@@ -284,9 +284,9 @@ export function TournamentAdmin({ bundle, reload, onDeleted }: Props) {
       )}
 
       {isRunning && disabled.length > 0 && (
-        <Card title="⚠️ Comptes désactivés">
+        <Card title="⚠️ Comptes désactivés ou supprimés">
           <p className="text-sm text-ink/70">
-            Ces joueurs ont un compte désactivé mais encore des matchs à jouer. Remplace-les, ou déclare-les forfait sur
+            Ces joueurs ont un compte désactivé ou supprimé mais encore des matchs à jouer. Remplace-les, ou déclare-les forfait sur
             tous leurs matchs non joués.
           </p>
           <ul className="divide-y divide-ink/10">

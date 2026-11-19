@@ -4,3 +4,6 @@ project_id = "tournois-dcpt"
 
 [functions.admin-temp-password]
 verify_jwt = true
+
+[functions.delete-account]
+verify_jwt = true

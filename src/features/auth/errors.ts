@@ -52,6 +52,11 @@ const MESSAGES_BY_DB_ERROR: Record<string, string> = {
     'La phase finale est générée : les résultats de poule sont figés. Annule la phase finale (Gestion) pour les modifier.',
   SCHEDULE_LOCKED: 'Le résultat est saisi : lieu et horaire ne sont plus modifiables (sauf par l’admin).',
   SWAP_NOT_POSSIBLE: 'Inversion impossible : le match a déjà un résultat (ou est un exempt).',
+  LAST_ADMIN: 'Tu es le seul admin : nomme un autre admin avant de supprimer ton compte.',
+  CANNOT_DELETE_OWN_ACCOUNT: 'Pour ton propre compte, utilise « Supprimer mon compte » dans ton profil.',
+  AUTH_DELETE_FAILED:
+    'Le compte est anonymisé mais la suppression de l’accès a échoué. Réessaie : la suppression reprendra où elle s’est arrêtée.',
+  DELETE_FAILED: 'La suppression du compte a échoué. Réessaie dans un instant.',
   NOT_NAME_ONLY: 'Ce joueur est déjà lié à un compte. Recharge la page.',
   MERGE_CONFLICT:
     "Ce compte et ce nom seul jouent dans un même tournoi : fusion impossible. Remplace d'abord l'un des deux dans ce tournoi.",

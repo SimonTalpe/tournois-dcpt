@@ -30,8 +30,11 @@ function check<T>(result: { data: T; error: { code?: string; message?: string } 
   return result.data
 }
 
-const TOURNAMENT_COLUMNS =
+export const TOURNAMENT_COLUMNS =
   'id, name, description, discipline, format, status, pool_count, qualifiers_per_pool, qualifier_placement, third_place, consolation, default_sets_to_win, default_dart_start, launched_at, created_at'
+
+export const MATCH_COLUMNS_WITH_SETS =
+  'id, tournament_id, round_id, pool_id, position, home_player_id, away_player_id, winner_player_id, status, next_match_id, next_slot, loser_next_match_id, loser_next_slot, result_by, result_by_admin, result_first_at, result_at, scheduled_at, location_id, forfeit_player_id, match_sets(set_number, home_points, away_points)'
 
 export async function listTournaments(): Promise<Tournament[]> {
   return check(await db().from('tournaments').select(TOURNAMENT_COLUMNS).order('created_at', { ascending: false })) as Tournament[]
@@ -51,7 +54,7 @@ export async function loadTournament(id: string): Promise<TournamentBundle | nul
     client
       .from('matches')
       .select(
-        'id, tournament_id, round_id, pool_id, position, home_player_id, away_player_id, winner_player_id, status, next_match_id, next_slot, loser_next_match_id, loser_next_slot, result_by, result_by_admin, result_first_at, result_at, scheduled_at, location_id, forfeit_player_id, match_sets(set_number, home_points, away_points)',
+        MATCH_COLUMNS_WITH_SETS,
       )
       .eq('tournament_id', id)
       .order('position'),

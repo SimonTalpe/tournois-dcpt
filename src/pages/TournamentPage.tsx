@@ -214,7 +214,13 @@ export function TournamentPage() {
                   e.player_id === myPlayerId ? 'ring-2 ring-ball' : ''
                 }`}
               >
-                <span className="truncate">{name(e.player_id)}</span>
+                {viewer.isActivePlayer ? (
+                  <Link to={`/joueurs/${e.player_id}`} className="truncate text-court underline-offset-2 hover:underline">
+                    {name(e.player_id)}
+                  </Link>
+                ) : (
+                  <span className="truncate">{name(e.player_id)}</span>
+                )}
                 {e.pool_id && <span className="text-xs text-ink/50">Poule {poolOf.get(e.pool_id)}</span>}
               </li>
             ))}

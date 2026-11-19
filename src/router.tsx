@@ -9,6 +9,7 @@ import { ForgotPasswordPage } from './pages/ForgotPasswordPage.tsx'
 import { HomePage } from './pages/HomePage.tsx'
 import { LoginPage } from './pages/LoginPage.tsx'
 import { NotFoundPage } from './pages/NotFoundPage.tsx'
+import { PlayerPage } from './pages/PlayerPage.tsx'
 import { ProfilePage } from './pages/ProfilePage.tsx'
 import { SignupPage } from './pages/SignupPage.tsx'
 import { SpectatorPage } from './pages/SpectatorPage.tsx'
@@ -46,6 +47,14 @@ export const router = createBrowserRouter([
         element: (
           <RequirePlayer>
             <ProfilePage />
+          </RequirePlayer>
+        ),
+      },
+      {
+        path: '/joueurs/:playerId',
+        element: (
+          <RequirePlayer>
+            <PlayerPage />
           </RequirePlayer>
         ),
       },
