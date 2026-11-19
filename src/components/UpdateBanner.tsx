@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 import { UPDATE_CHECK_MS } from '../lib/version.ts'
 
@@ -7,7 +8,11 @@ import { UPDATE_CHECK_MS } from '../lib/version.ts'
  * après une mise à jour. On vérifie s'il existe une nouvelle version au démarrage, toutes les 15 minutes
  * et au retour sur l'application (téléphone sorti de veille).
  */
+/** Délai au-delà duquel on recharge la page même si le nouveau service worker ne s'est pas manifesté. */
+const RELOAD_FALLBACK_MS = 2500
+
 export function UpdateBanner() {
+  const [reloading, setReloading] = useState(false)
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
@@ -22,6 +27,25 @@ export function UpdateBanner() {
     },
   })
 
+  /**
+   * Active la nouvelle version puis recharge la page.
+   * La bibliothèque ne recharge que si la page était déjà contrôlée par le service worker : après un
+   * rechargement forcé (Ctrl+Maj+R), ce n'est pas le cas et le bouton restait sans effet (19/11/2026).
+   * On recharge donc dès que le nouveau service worker prend la main, et au plus tard après 2,5 s.
+   */
+  async function reload() {
+    setReloading(true)
+    let done = false
+    const go = () => {
+      if (done) return
+      done = true
+      window.location.reload()
+    }
+    navigator.serviceWorker?.addEventListener('controllerchange', go)
+    setTimeout(go, RELOAD_FALLBACK_MS)
+    await updateServiceWorker(true).catch(() => {})
+  }
+
   if (!needRefresh) return null
   return (
     <div
@@ -31,10 +55,11 @@ export function UpdateBanner() {
       <span className="flex-1">✨ Nouvelle version disponible.</span>
       <button
         type="button"
-        onClick={() => void updateServiceWorker(true)}
-        className="rounded-lg bg-ball px-3 py-1.5 font-semibold text-court"
+        onClick={() => void reload()}
+        disabled={reloading}
+        className="rounded-lg bg-ball px-3 py-1.5 font-semibold text-court disabled:opacity-70"
       >
-        Recharger
+        {reloading ? 'Rechargement…' : 'Recharger'}
       </button>
       <button
         type="button"

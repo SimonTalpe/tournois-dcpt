@@ -28,6 +28,9 @@ export default defineConfig({
       // en mode automatique, l'ancienne version restait affichée jusqu'au rechargement suivant.
       registerType: 'prompt',
       injectRegister: false,
+      // Une fois activée (après « Recharger »), la nouvelle version prend aussi la main sur les pages
+      // ouvertes sans service worker (ex. après un rechargement forcé).
+      workbox: { clientsClaim: true },
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'Mini-pong et fléchettes',
