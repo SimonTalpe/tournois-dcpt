@@ -22,3 +22,53 @@ body {
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   -webkit-tap-highlight-color: transparent;
 }
+
+/* Contenus en mise en forme riche (annonces, descriptions de tournoi, éditeur). */
+.rich-text > * + * {
+  margin-top: 0.6em;
+}
+.rich-text h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-court);
+}
+.rich-text h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--color-court);
+}
+.rich-text ul {
+  list-style: disc;
+  padding-left: 1.4em;
+}
+.rich-text ol {
+  list-style: decimal;
+  padding-left: 1.4em;
+}
+.rich-text li + li {
+  margin-top: 0.2em;
+}
+.rich-text li > p {
+  margin: 0;
+}
+.rich-text a {
+  color: var(--color-court);
+  text-decoration: underline;
+  word-break: break-word;
+}
+.rich-text blockquote {
+  border-left: 3px solid var(--color-ball);
+  padding-left: 0.8em;
+  color: color-mix(in srgb, var(--color-ink) 75%, transparent);
+}
+.rich-text hr {
+  border-color: color-mix(in srgb, var(--color-ink) 15%, transparent);
+}
+/* Éditeur vide : texte d'aide. */
+.rich-text.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: color-mix(in srgb, var(--color-ink) 40%, transparent);
+}
