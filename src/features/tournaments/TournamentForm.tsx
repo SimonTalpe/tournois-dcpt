@@ -130,7 +130,14 @@ export function TournamentForm({ initial, structureLocked = false, submitLabel, 
         value={form.discipline}
         disabled={structureLocked}
         options={(['mini_pong', 'darts'] as const).map((value) => ({ value, label: DISCIPLINE_LABELS[value] }))}
-        onChange={(value) => set('discipline', value)}
+        onChange={(value) =>
+          // Format par défaut propre à chaque discipline : 2 sets gagnants au mini-pong, 1 manche aux fléchettes.
+          setForm((current) =>
+            current.discipline === value
+              ? current
+              : { ...current, discipline: value, default_sets_to_win: value === 'darts' ? 1 : 2 },
+          )
+        }
       />
 
       <div className="space-y-1">
@@ -228,12 +235,30 @@ export function TournamentForm({ initial, structureLocked = false, submitLabel, 
           onChange={(value) => set('default_sets_to_win', Number(value))}
         />
       ) : (
-        <Choice
-          legend="Format de jeu par défaut (modifiable ensuite pour chaque tour)"
-          value={String(form.default_dart_start)}
-          options={[301, 501].map((n) => ({ value: String(n), label: String(n) }))}
-          onChange={(value) => set('default_dart_start', Number(value))}
-        />
+        <fieldset className="space-y-3 rounded-xl border border-ink/10 p-3">
+          <legend className="px-1 text-sm font-medium">Format de jeu par défaut (modifiable ensuite pour chaque tour)</legend>
+          <Choice
+            legend="Départ"
+            value={String(form.default_dart_start)}
+            options={[301, 501].map((n) => ({ value: String(n), label: String(n) }))}
+            onChange={(value) => set('default_dart_start', Number(value))}
+          />
+          <Choice
+            legend="Manches gagnantes"
+            value={String(form.default_sets_to_win)}
+            options={[1, 2, 3].map((n) => ({
+              value: String(n),
+              label: n === 1 ? '1 manche (partie unique)' : `${n} manches gagnantes`,
+            }))}
+            onChange={(value) => set('default_sets_to_win', Number(value))}
+          />
+          <Toggle
+            label="Finir sur un double"
+            hint="Le dernier lancer doit être un double (ou le Bull)."
+            checked={form.default_dart_double_out}
+            onChange={(value) => set('default_dart_double_out', value)}
+          />
+        </fieldset>
       )}
 
       {error && <Notice tone="error">{error}</Notice>}

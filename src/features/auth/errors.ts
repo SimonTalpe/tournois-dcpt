@@ -62,6 +62,10 @@ const MESSAGES_BY_DB_ERROR: Record<string, string> = {
   MERGE_CONFLICT_DART_GAME:
     'Ce compte et ce nom seul ont joué une même partie au compteur de fléchettes : fusion impossible.',
   INVALID_DART_GAME: 'Résultat de partie incohérent : il n’a pas pu être enregistré.',
+  INVALID_DART_MATCH: 'Résultat du match incohérent (joueurs ou manches) : il n’a pas pu être enregistré.',
+  MATCH_ALREADY_PLAYED: 'Ce match a déjà un résultat (validé depuis un autre téléphone ?) : ta partie n’est pas enregistrée.',
+  TIEBREAK_ALREADY_SET: 'Ce départage a déjà un résultat (validé depuis un autre téléphone ?) : ta partie n’est pas enregistrée.',
+  INVALID_LEGS: 'Score en manches invalide : le vainqueur doit avoir toutes les manches requises, le perdant moins.',
   DUPLICATE_DART_PLAYER: 'Un même joueur figure deux fois dans la partie.',
   MERGE_CONFLICT:
     "Ce compte et ce nom seul jouent dans un même tournoi : fusion impossible. Remplace d'abord l'un des deux dans ce tournoi.",

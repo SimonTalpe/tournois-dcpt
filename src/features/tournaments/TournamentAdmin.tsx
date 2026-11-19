@@ -22,7 +22,7 @@ import { sortRounds } from './display.ts'
 import { PeoplePicker } from './PeoplePicker.tsx'
 import { computeFinalPhase } from './standings.ts'
 import { TournamentForm } from './TournamentForm.tsx'
-import type { TournamentBundle, TournamentStatus } from './types.ts'
+import type { Round, TournamentBundle, TournamentStatus } from './types.ts'
 
 type Props = {
   bundle: TournamentBundle
@@ -189,44 +189,72 @@ export function TournamentAdmin({ bundle, reload, onDeleted }: Props) {
       {!isDraft && rounds.length > 0 && (
         <Card title="Format de jeu par tour">
           <ul className="divide-y divide-ink/10">
-            {sortRounds(rounds).map((round) => (
-              <li key={round.id} className="flex items-center justify-between gap-3 py-2">
-                <span className="text-sm">{round.name}</span>
-                {tournament.discipline === 'mini_pong' ? (
-                  <select
-                    aria-label={`Format — ${round.name}`}
-                    className="rounded-lg border border-ink/20 px-2 py-1.5 text-sm"
-                    value={round.sets_to_win}
-                    disabled={busy}
-                    onChange={(e) =>
-                      run(() => updateRoundFormat(round.id, { sets_to_win: Number(e.target.value), dart_start: round.dart_start }))
-                    }
-                  >
-                    {[1, 2, 3].map((n) => (
-                      <option key={n} value={n}>
-                        {n === 1 ? '1 set gagnant' : `${n} sets gagnants`}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <select
-                    aria-label={`Format — ${round.name}`}
-                    className="rounded-lg border border-ink/20 px-2 py-1.5 text-sm"
-                    value={round.dart_start}
-                    disabled={busy}
-                    onChange={(e) =>
-                      run(() => updateRoundFormat(round.id, { sets_to_win: round.sets_to_win, dart_start: Number(e.target.value) }))
-                    }
-                  >
-                    {[301, 501].map((n) => (
-                      <option key={n} value={n}>
-                        {n}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </li>
-            ))}
+            {sortRounds(rounds).map((round) => {
+              const update = (change: Partial<Pick<Round, 'sets_to_win' | 'dart_start' | 'dart_double_out'>>) =>
+                run(() =>
+                  updateRoundFormat(round.id, {
+                    sets_to_win: round.sets_to_win,
+                    dart_start: round.dart_start,
+                    dart_double_out: round.dart_double_out,
+                    ...change,
+                  }),
+                )
+              const legsLabel = (n: number) =>
+                tournament.discipline === 'darts'
+                  ? n === 1
+                    ? '1 manche gagnante'
+                    : `${n} manches gagnantes`
+                  : n === 1
+                    ? '1 set gagnant'
+                    : `${n} sets gagnants`
+              return (
+                <li key={round.id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 py-2">
+                  <span className="text-sm">{round.name}</span>
+                  <span className="flex flex-wrap items-center gap-2">
+                    {tournament.discipline === 'darts' && (
+                      <select
+                        aria-label={`Départ — ${round.name}`}
+                        className="rounded-lg border border-ink/20 px-2 py-1.5 text-sm"
+                        value={round.dart_start}
+                        disabled={busy}
+                        onChange={(e) => update({ dart_start: Number(e.target.value) })}
+                      >
+                        {[301, 501].map((n) => (
+                          <option key={n} value={n}>
+                            {n}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    <select
+                      aria-label={`${tournament.discipline === 'darts' ? 'Manches' : 'Sets'} — ${round.name}`}
+                      className="rounded-lg border border-ink/20 px-2 py-1.5 text-sm"
+                      value={round.sets_to_win}
+                      disabled={busy}
+                      onChange={(e) => update({ sets_to_win: Number(e.target.value) })}
+                    >
+                      {[1, 2, 3].map((n) => (
+                        <option key={n} value={n}>
+                          {legsLabel(n)}
+                        </option>
+                      ))}
+                    </select>
+                    {tournament.discipline === 'darts' && (
+                      <label className="flex items-center gap-1.5 text-sm">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 accent-court"
+                          checked={round.dart_double_out}
+                          disabled={busy}
+                          onChange={(e) => update({ dart_double_out: e.target.checked })}
+                        />
+                        Sortie double
+                      </label>
+                    )}
+                  </span>
+                </li>
+              )
+            })}
           </ul>
           {tournament.format === 'pools_knockout' && (
             <p className="text-xs text-ink/60">Les tours de la phase finale apparaîtront ici une fois celle-ci générée.</p>

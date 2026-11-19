@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router'
 import { Notice, SecondaryButton } from '../../components/ui.tsx'
+import { prepareTournamentGame } from '../darts/launch.ts'
 import { tiebreakRights } from '../../lib/scores.ts'
 import { submitTiebreak } from './api.ts'
 import type { Viewer } from './MatchDialog.tsx'
@@ -26,6 +28,7 @@ export function TiebreakDialog({ bundle, pool, group, existing, viewer, onClose,
     existing ? [...existing.ranking] : [...group].sort((a, b) => name(a).localeCompare(name(b), 'fr')),
   )
   const [busy, setBusy] = useState(false)
+  const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
   const rights = tiebreakRights(
     tournament.discipline,
@@ -48,6 +51,23 @@ export function TiebreakDialog({ bundle, pool, group, existing, viewer, onClose,
       ;[next[index], next[index + delta]] = [next[index + delta], next[index]]
       return next
     })
+
+  /** Partie à plusieurs au compteur, ordre de jeu tiré au sort, format des poules. */
+  function playWithCounter() {
+    const poolRound = bundle.rounds.find((r) => r.bracket === 'pool')
+    if (!poolRound) return
+    const ready = prepareTournamentGame({
+      kind: 'tiebreak',
+      tournamentId: tournament.id,
+      tournamentName: tournament.name,
+      label: `Départage poule ${pool.label}`,
+      poolId: pool.id,
+      start: poolRound.dart_start === 501 ? 501 : 301,
+      doubleOut: poolRound.dart_double_out,
+      players: group.map((id) => ({ playerId: id, name: name(id) })),
+    })
+    if (ready) navigate('/compteur')
+  }
 
   async function save() {
     const summary = order.map((id, i) => `${i + 1}. ${name(id)}`).join('\n')
@@ -129,6 +149,21 @@ export function TiebreakDialog({ bundle, pool, group, existing, viewer, onClose,
           <p className="text-xs text-ink/60">Correction possible jusqu'à {timeFormat.format(rights.deadline)}.</p>
         )}
         {error && <Notice tone="error">{error}</Notice>}
+        {isDarts && rights.canEdit && !existing && (
+          <div className="space-y-1">
+            <button
+              type="button"
+              onClick={playWithCounter}
+              disabled={busy}
+              className="w-full rounded-xl bg-ball px-4 py-3 font-semibold text-court shadow-sm transition active:scale-[0.98] disabled:opacity-60"
+            >
+              🎯 Jouer le départage au compteur
+            </button>
+            <p className="text-center text-xs text-ink/60">
+              Ordre de jeu tiré au sort, partie jouée jusqu'au bout. Ou enregistre le classement ci-dessus à la main.
+            </p>
+          </div>
+        )}
         {rights.canEdit && (
           <button
             type="button"

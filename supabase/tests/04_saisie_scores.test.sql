@@ -173,7 +173,7 @@ select tests.assert((select home_player_id from public.matches where id = :m3) =
 -- ---------------------------------------------------------------- Fléchettes
 select set_config('request.jwt.claim.sub', :alice_id, true);
 select tests.expect_error(format($$select public.submit_match_result(%L, %L, '[{"home":11,"away":2}]')$$, :d1, :pa),
-  'INVALID_SCORE', 'fléchettes : pas de sets');
+  'INVALID_LEGS', 'fléchettes : pas de sets (score en manches attendu)');
 select tests.expect_error(format($$select public.submit_match_result(%L, %L, null)$$, :d1, :pb),
   'INVALID_SCORE', 'fléchettes : vainqueur hors du match refusé');
 select public.submit_match_result(:d1, :pc, null);

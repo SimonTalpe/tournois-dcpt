@@ -3,6 +3,7 @@ import { SecondaryButton } from '../../components/ui.tsx'
 import { formatSchedule } from '../../lib/schedule.ts'
 import { setsWon } from '../../lib/scores.ts'
 import { groupKey } from '../../lib/standings.ts'
+import { dartLegsScore } from './display.ts'
 import type { Viewer } from './MatchDialog.tsx'
 import { poolStandings } from './standings.ts'
 import { TiebreakDialog } from './TiebreakDialog.tsx'
@@ -41,6 +42,8 @@ export function PoolsView({ bundle, highlightPlayerId, onOpenMatch, viewer, onSa
     if (m.status === 'cancelled') return <span className="text-[10px] text-ink/40 uppercase">annulé</span>
     if (m.status !== 'played') return <span className="text-xs text-ink/40">vs</span>
     if (!isMiniPong) {
+      const legs = dartLegsScore(m)
+      if (legs) return <span className="font-semibold text-court tabular-nums">{`${legs.home}-${legs.away}`}</span>
       return <span className="text-xs text-court">{m.winner_player_id === m.home_player_id ? '✓ –' : '– ✓'}</span>
     }
     const won = setsWon(bundle.sets.get(m.id) ?? [])

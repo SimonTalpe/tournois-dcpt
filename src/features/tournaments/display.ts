@@ -45,3 +45,12 @@ export function placeholderLabel(source: SlotSource | undefined, numbers: Map<st
   const ref = n ? `M${n}` : 'match précédent'
   return source.kind === 'winner' ? `Vainqueur ${ref}` : `Perdant ${ref}`
 }
+
+/**
+ * Score en manches d'un match de fléchettes joué, affiché seulement s'il y a eu plus d'une manche
+ * (une partie unique se lit avec la coche du vainqueur).
+ */
+export function dartLegsScore(match: Pick<Match, 'status' | 'home_legs' | 'away_legs'>): { home: number; away: number } | null {
+  if (match.status !== 'played' || match.home_legs === null || match.away_legs === null) return null
+  return match.home_legs + match.away_legs > 1 ? { home: match.home_legs, away: match.away_legs } : null
+}

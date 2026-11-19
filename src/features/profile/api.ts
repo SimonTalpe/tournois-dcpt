@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { SetScore } from '../../lib/scores.ts'
 import { supabase } from '../../lib/supabase.ts'
 import { translateError } from '../auth/errors.ts'
-import { MATCH_COLUMNS_WITH_SETS, TOURNAMENT_COLUMNS } from '../tournaments/api.ts'
+import { MATCH_COLUMNS_WITH_SETS, ROUND_COLUMNS, TOURNAMENT_COLUMNS } from '../tournaments/api.ts'
 import type { Match, Player, Pool, Round, Tournament } from '../tournaments/types.ts'
 import type { PlayerHistoryData } from './stats.ts'
 
@@ -53,7 +53,7 @@ export async function loadPlayerHistory(playerId: string): Promise<PlayerHistory
     client.from('tournaments').select(TOURNAMENT_COLUMNS).in('id', tournamentIds).neq('status', 'draft'),
     client
       .from('tournament_rounds')
-      .select('id, tournament_id, bracket, round_number, name, sets_to_win, dart_start')
+      .select(ROUND_COLUMNS)
       .in('tournament_id', tournamentIds),
     client.from('pools').select('id, tournament_id, label').in('tournament_id', tournamentIds),
   ])
