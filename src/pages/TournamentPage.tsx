@@ -27,7 +27,8 @@ export function TournamentPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [bundle, setBundle] = useState<TournamentBundle | null | undefined>(undefined)
   const [error, setError] = useState<string | null>(null)
-  const [openMatchId, setOpenMatchId] = useState<string | null>(null)
+  // Lien direct vers un match (depuis l'accueil) : ?match=<id> ouvre son détail.
+  const [openMatchId, setOpenMatchId] = useState<string | null>(() => searchParams.get('match'))
 
   const reload = useCallback(async () => {
     try {
@@ -191,7 +192,14 @@ export function TournamentPage() {
           bundle={bundle}
           match={openMatch}
           viewer={viewer}
-          onClose={() => setOpenMatchId(null)}
+          onClose={() => {
+            setOpenMatchId(null)
+            if (searchParams.has('match')) {
+              const next = new URLSearchParams(searchParams)
+              next.delete('match')
+              setSearchParams(next, { replace: true })
+            }
+          }}
           onSaved={reload}
         />
       )}
