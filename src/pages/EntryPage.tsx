@@ -1,9 +1,10 @@
-import { Link, Navigate } from 'react-router'
+import { Link, Navigate, useLocation } from 'react-router'
 import { canViewSite, useAuth } from '../features/auth/AuthContext.ts'
 
 /** Écran d'entrée : deux choix, « Jouer » (connexion) ou « Regarder » (code spectateur). */
 export function EntryPage() {
   const auth = useAuth()
+  const accountDeleted = Boolean((useLocation().state as { accountDeleted?: boolean } | null)?.accountDeleted)
   // Déjà connecté (joueur) ou spectateur : directement sur l'accueil.
   if (!auth.demoMode && !auth.loading && canViewSite(auth)) return <Navigate to="/accueil" replace />
 
@@ -14,6 +15,12 @@ export function EntryPage() {
         <h1 className="text-3xl font-bold sm:text-4xl">Mini-pong et fléchettes</h1>
         <p className="max-w-sm text-chalk/80">Les tournois de la pause, entre collègues.</p>
       </div>
+
+      {accountDeleted && (
+        <p role="status" className="max-w-sm rounded-xl bg-chalk/15 px-4 py-3 text-center text-sm">
+          Ton compte a bien été supprimé. Merci d’avoir joué ! 👋
+        </p>
+      )}
 
       <div className="flex w-full max-w-sm flex-col gap-4">
         <Link

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { listDisabledPlayersWithPendingMatches, type DisabledPlayerPending } from '../tournaments/api.ts'
 import { Notice, SecondaryButton } from '../../components/ui.tsx'
+import { invokeFunction } from '../../lib/functions.ts'
 import { supabase } from '../../lib/supabase.ts'
 import { useAuth } from '../auth/AuthContext.ts'
 import { translateError } from '../auth/errors.ts'
@@ -20,7 +21,7 @@ type Account = {
 
 const dateFormat = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short' })
 
-/** Liste des comptes : désactivation / réactivation, mot de passe provisoire. */
+/** Liste des comptes : désactivation / réactivation, mot de passe provisoire, suppression. */
 export function AccountsSection() {
   const { session } = useAuth()
   const [accounts, setAccounts] = useState<Account[] | null>(null)
@@ -91,6 +92,27 @@ export function AccountsSection() {
     await load()
   }
 
+  async function deleteAccount(account: Account) {
+    const confirmation = window.prompt(
+      `Supprimer définitivement le compte de ${account.full_name} ?\n\n` +
+        `Son nom sera remplacé par « Joueur supprimé » dans les tableaux et l'historique (résultats conservés), ` +
+        `il ne pourra plus se connecter et son adresse email sera effacée.\n\nTape SUPPRIMER pour confirmer.`,
+    )
+    if (confirmation?.trim().toUpperCase() !== 'SUPPRIMER') return
+    setBusyId(account.id)
+    setError(null)
+    setMessage(null)
+    const result = await invokeFunction<{ ok: boolean }>('delete-account', { userId: account.id })
+    setBusyId(null)
+    if ('error' in result) return setError(result.error)
+    setMessage(`Compte de ${account.full_name} supprimé.`)
+    // Compte supprimé encore engagé dans un tournoi en cours : proposer remplacement ou forfait.
+    setPending(
+      (await listDisabledPlayersWithPendingMatches().catch(() => [])).filter((p) => p.profile_id === account.id),
+    )
+    await load()
+  }
+
   return (
     <section className="space-y-3 rounded-2xl bg-white p-4 shadow-sm">
       <h2 className="text-lg font-bold text-court">Comptes joueurs</h2>
@@ -152,6 +174,9 @@ export function AccountsSection() {
                         Réactiver
                       </SecondaryButton>
                     )}
+                    <SecondaryButton danger onClick={() => deleteAccount(account)} disabled={busyId === account.id}>
+                      Supprimer
+                    </SecondaryButton>
                   </div>
                 )}
               </li>
