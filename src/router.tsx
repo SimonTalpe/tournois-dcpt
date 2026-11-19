@@ -10,7 +10,6 @@ import { HomePage } from './pages/HomePage.tsx'
 import { LoginPage } from './pages/LoginPage.tsx'
 import { NotFoundPage } from './pages/NotFoundPage.tsx'
 import { ProfilePage } from './pages/ProfilePage.tsx'
-import { RulesPage } from './pages/RulesPage.tsx'
 import { SignupPage } from './pages/SignupPage.tsx'
 import { SpectatorPage } from './pages/SpectatorPage.tsx'
 import { TournamentPage } from './pages/TournamentPage.tsx'
@@ -42,7 +41,6 @@ export const router = createBrowserRouter([
       { path: '/tournois', element: <TournamentsPage /> },
       { path: '/tournois/:tournamentId', element: <TournamentPage /> },
       { path: '/annonces', element: <AnnouncementsPage /> },
-      { path: '/regles', element: <RulesPage /> },
       {
         path: '/profil',
         element: (
