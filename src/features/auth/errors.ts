@@ -58,6 +58,11 @@ const MESSAGES_BY_DB_ERROR: Record<string, string> = {
     'Le compte est anonymisé mais la suppression de l’accès a échoué. Réessaie : la suppression reprendra où elle s’est arrêtée.',
   DELETE_FAILED: 'La suppression du compte a échoué. Réessaie dans un instant.',
   NOT_NAME_ONLY: 'Ce joueur est déjà lié à un compte. Recharge la page.',
+  // Avant MERGE_CONFLICT : la recherche se fait par inclusion dans le message.
+  MERGE_CONFLICT_DART_GAME:
+    'Ce compte et ce nom seul ont joué une même partie au compteur de fléchettes : fusion impossible.',
+  INVALID_DART_GAME: 'Résultat de partie incohérent : il n’a pas pu être enregistré.',
+  DUPLICATE_DART_PLAYER: 'Un même joueur figure deux fois dans la partie.',
   MERGE_CONFLICT:
     "Ce compte et ce nom seul jouent dans un même tournoi : fusion impossible. Remplace d'abord l'un des deux dans ce tournoi.",
 }

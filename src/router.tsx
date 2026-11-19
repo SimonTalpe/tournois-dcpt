@@ -4,6 +4,7 @@ import { RequireAdmin, RequirePlayer, RequireViewer } from './features/auth/guar
 import { AdminPage } from './pages/AdminPage.tsx'
 import { AnnouncementsPage } from './pages/AnnouncementsPage.tsx'
 import { ChangePasswordPage } from './pages/ChangePasswordPage.tsx'
+import { DartsPage } from './pages/DartsPage.tsx'
 import { EntryPage } from './pages/EntryPage.tsx'
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage.tsx'
 import { HomePage } from './pages/HomePage.tsx'
@@ -42,6 +43,7 @@ export const router = createBrowserRouter([
       { path: '/tournois', element: <TournamentsPage /> },
       { path: '/tournois/:tournamentId', element: <TournamentPage /> },
       { path: '/annonces', element: <AnnouncementsPage /> },
+      { path: '/compteur', element: <DartsPage /> },
       {
         path: '/profil',
         element: (
