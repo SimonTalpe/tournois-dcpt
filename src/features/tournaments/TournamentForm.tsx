@@ -1,5 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { Notice, PrimaryButton, TextField } from '../../components/ui.tsx'
+import { normalizeRichText } from '../content/richText.ts'
+import { LazyRichTextEditor as RichTextEditor } from '../content/LazyRichTextEditor.tsx'
 import { DISCIPLINE_LABELS, FORMAT_LABELS, type Discipline, type TournamentFormat, type TournamentInput } from './types.ts'
 
 type Props = {
@@ -99,7 +101,7 @@ export function TournamentForm({ initial, structureLocked = false, submitLabel, 
       await onSubmit({
         ...form,
         name,
-        description: form.description.trim(),
+        description: normalizeRichText(form.description),
         pool_count: withPools ? form.pool_count : null,
         qualifiers_per_pool: withPools ? form.qualifiers_per_pool : null,
       })
@@ -135,16 +137,12 @@ export function TournamentForm({ initial, structureLocked = false, submitLabel, 
         <label htmlFor="tournamentDescription" className="block text-sm font-medium">
           Description
         </label>
-        <textarea
+        <RichTextEditor
           id="tournamentDescription"
-          rows={4}
-          maxLength={5000}
-          className="w-full rounded-xl border border-ink/20 px-3 py-2.5 text-base outline-none focus:ring-2 focus:ring-court/40"
-          value={form.description}
-          onChange={(e) => set('description', e.target.value)}
+          initialValue={initial.description}
+          onChange={(html) => set('description', html)}
           placeholder="Dates, déroulement, lots…"
         />
-        <p className="text-xs text-ink/60">Texte simple pour l'instant (mise en forme riche prévue à l'étape 5).</p>
       </div>
 
       <Choice<TournamentFormat>

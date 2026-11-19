@@ -1,4 +1,7 @@
 import { Link, NavLink, Outlet, useNavigate } from 'react-router'
+import { NotificationBell } from '../features/announcements/NotificationBell.tsx'
+import { useNotifications } from '../features/announcements/NotificationsContext.ts'
+import { NotificationsProvider } from '../features/announcements/NotificationsProvider.tsx'
 import { isAdmin, isPlayer, useAuth } from '../features/auth/AuthContext.ts'
 
 const NAV_ITEMS = [
@@ -10,6 +13,21 @@ const NAV_ITEMS = [
 
 /** Mise en page commune : en-tête, menu en haut sur ordinateur, barre en bas sur mobile. */
 export function AppLayout() {
+  return (
+    <NotificationsProvider>
+      <Layout />
+    </NotificationsProvider>
+  )
+}
+
+/** Pastille « nouvelles annonces » sur l'entrée du menu. */
+function UnreadDot({ to }: { to: string }) {
+  const { unreadCount } = useNotifications()
+  if (to !== '/annonces' || unreadCount === 0) return null
+  return <span className="ml-1 inline-block h-2 w-2 rounded-full bg-clay align-middle" aria-label="nouvelles annonces" />
+}
+
+function Layout() {
   const auth = useAuth()
   const navigate = useNavigate()
   const items = NAV_ITEMS.filter((item) => !item.playersOnly || isPlayer(auth))
@@ -45,6 +63,7 @@ export function AppLayout() {
                 }
               >
                 {item.label}
+                <UnreadDot to={item.to} />
               </NavLink>
             ))}
           </nav>
@@ -52,6 +71,7 @@ export function AppLayout() {
             <span className="truncate text-chalk/80" title={who}>
               {who}
             </span>
+            {!auth.demoMode && isPlayer(auth) && <NotificationBell />}
             {isAdmin(auth) && (
               <NavLink
                 to="/admin"
@@ -96,8 +116,11 @@ export function AppLayout() {
               }`
             }
           >
-            <span aria-hidden="true" className="text-lg">
+            <span aria-hidden="true" className="relative text-lg">
               {item.icon}
+              <span className="absolute -top-0.5 -right-2">
+                <UnreadDot to={item.to} />
+              </span>
             </span>
             {item.label}
           </NavLink>

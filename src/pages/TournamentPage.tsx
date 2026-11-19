@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { DemoModeNotice, Notice } from '../components/ui.tsx'
+import { RichText } from '../features/content/RichText.tsx'
 import { isAdmin, useAuth } from '../features/auth/AuthContext.ts'
 import { loadTournament } from '../features/tournaments/api.ts'
 import { BracketView } from '../features/tournaments/BracketView.tsx'
@@ -135,7 +136,7 @@ export function TournamentPage() {
             </button>
           )}
         </p>
-        {tournament.description && <p className="pt-2 whitespace-pre-line">{tournament.description}</p>}
+        <RichText html={tournament.description} className="pt-2" />
       </header>
 
       {tabs.length > 1 && (
