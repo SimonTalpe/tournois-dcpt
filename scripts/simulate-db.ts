@@ -15,6 +15,7 @@ import pg from 'pg'
 import { buildLaunchDraw, type DrawConfig } from '../src/lib/draw/plan.ts'
 import { poolStandings, computeFinalPhase } from '../src/features/tournaments/standings.ts'
 import type { Match, TournamentBundle, Tournament } from '../src/features/tournaments/types.ts'
+import { replayElo, type EloEvent } from '../src/features/ranking/elo.ts'
 
 const [, , database, countArg = '60', seedArg = String(Date.now() % 100000)] = process.argv
 if (!database) throw new Error('Nom de la base manquant')
@@ -56,6 +57,11 @@ const stats = {
   playerForfeits: 0,
   dartMatchesByCounter: 0,
   dartTiebreaksByCounter: 0,
+  rankedMatches: 0,
+  rankedCorrections: 0,
+  rankedDeletions: 0,
+  rankedLimitRefusals: 0,
+  eloRows: 0,
 }
 
 class Failure extends Error {}
@@ -653,6 +659,108 @@ async function playTournament(index: number) {
   return label
 }
 
+// ---------------------------------------------------------------- Elo et matchs classés
+/**
+ * Matchs classés aléatoires (saisies, corrections, suppressions, limite quotidienne) entre les comptes,
+ * puis comparaison de l'Elo calculé par la base (tournois + matchs classés) avec le calcul de référence du site.
+ */
+async function playRankedAndCheckElo() {
+  const today = new Map<string, number>() // paire|discipline → matchs du jour
+  const mine: { id: string; author: string; discipline: string; key: string }[] = []
+  for (let i = 0; i < 120; i++) {
+    const discipline = pick(['mini_pong', 'darts'] as const)
+    const author = pick(accounts)
+    const opponent = pick(accounts.filter((a) => a !== author))
+    const key = [author, opponent].sort().join('|') + discipline
+    const id = randomUUID()
+    const winnerHome = chance(0.5)
+    const score =
+      discipline === 'mini_pong'
+        ? winnerHome
+          ? { home: 11, away: Math.floor(rng() * 10) }
+          : { home: Math.floor(rng() * 10), away: 11 }
+        : { winner: winnerHome ? 'home' : 'away', loser_remaining: chance(0.5) ? 1 + Math.floor(rng() * 300) : null }
+    const record = as(author, `select public.record_ranked_match($1, $2, $3, $4, $5)`, [id, discipline, author, opponent, score])
+    if ((today.get(key) ?? 0) >= 3) {
+      await expectRefusal(record, 'RANKED_DAILY_LIMIT', 'match classé')
+      stats.rankedLimitRefusals++
+      continue
+    }
+    await record
+    today.set(key, (today.get(key) ?? 0) + 1)
+    mine.push({ id, author, discipline, key })
+    stats.rankedMatches++
+    if (chance(0.15)) {
+      const target = pick(mine)
+      const fix = target.discipline === 'mini_pong' ? { home: 3, away: 11 } : { winner: 'away', loser_remaining: null }
+      await as(target.author, `select public.correct_ranked_match($1, $2)`, [target.id, fix])
+      stats.rankedCorrections++
+    }
+    if (chance(0.05)) {
+      const target = mine.splice(Math.floor(rng() * mine.length), 1)[0]
+      await as(target.author, `select public.delete_ranked_match($1)`, [target.id])
+      today.set(target.key, (today.get(target.key) ?? 1) - 1)
+      stats.rankedDeletions++
+    }
+  }
+
+  for (const discipline of ['mini_pong', 'darts'] as const) {
+    const events = await su<{
+      source: 'tournament' | 'ranked'
+      id: string
+      played_at: string
+      home_id: string
+      away_id: string
+      home_account: boolean
+      away_account: boolean
+      winner_id: string
+    }>(
+      `select * from (
+         select 'tournament' as source, m.id, coalesce(m.result_first_at, m.updated_at) as played_at,
+                m.home_player_id as home_id, m.away_player_id as away_id, m.winner_player_id as winner_id,
+                hp.profile_id is not null as home_account, ap.profile_id is not null as away_account
+         from public.matches m join public.tournaments t on t.id = m.tournament_id
+         join public.players hp on hp.id = m.home_player_id join public.players ap on ap.id = m.away_player_id
+         where t.discipline = $1 and m.status = 'played' and (hp.profile_id is not null or ap.profile_id is not null)
+         union all
+         select 'ranked', r.id, r.played_at, r.home_player_id, r.away_player_id, r.winner_player_id, true, true
+         from public.ranked_matches r where r.discipline = $1
+       ) e order by e.played_at, e.id`,
+      [discipline],
+    )
+    const expected = replayElo(
+      events.map(
+        (e): EloEvent => ({
+          id: e.id,
+          source: e.source,
+          playedAt: String(e.played_at),
+          homeId: e.home_id,
+          awayId: e.away_id,
+          homeAccount: e.home_account,
+          awayAccount: e.away_account,
+          winnerId: e.winner_id,
+        }),
+      ),
+    )
+    const actual = await as<{ player_id: string; seq: number; match_id: string; rating_after: number; delta: number }>(
+      pick(accounts),
+      `select player_id, seq, match_id, rating_after, delta from public.get_elo_history($1)`,
+      [discipline],
+    )
+    const key = (r: { playerId?: string; player_id?: string; seq: number }) => `${r.playerId ?? r.player_id}#${r.seq}`
+    const byKey = new Map(actual.map((r) => [key(r), r]))
+    assert(actual.length === expected.length, `Elo ${discipline} : ${actual.length} lignes (attendu ${expected.length})`)
+    for (const row of expected) {
+      const got = byKey.get(key(row))
+      assert(
+        got && got.match_id === row.matchId && got.rating_after === row.ratingAfter && got.delta === row.delta,
+        `Elo ${discipline} : écart pour ${key(row)} (base ${got?.rating_after}/${got?.delta}, attendu ${row.ratingAfter}/${row.delta})`,
+      )
+    }
+    stats.eloRows += actual.length
+  }
+}
+
 const startSeed = seed
 let failures = 0
 for (let i = 1; i <= TOURNAMENTS; i++) {
@@ -664,6 +772,12 @@ for (let i = 1; i <= TOURNAMENTS; i++) {
     console.error(`  ÉCHEC — tournoi ${i} : ${(e as Error).message}`)
     if (failures >= 5) break
   }
+}
+try {
+  await playRankedAndCheckElo()
+} catch (e) {
+  failures++
+  console.error(`  ÉCHEC — Elo et matchs classés : ${(e as Error).message}`)
 }
 await client.end()
 console.log(`  graine ${startSeed} · ${JSON.stringify(stats)}`)

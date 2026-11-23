@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { supabase } from '../../lib/supabase.ts'
 import { isPlayer, useAuth } from '../auth/AuthContext.ts'
-import { listMyNotifications, markNotificationsRead, type AppNotification } from './api.ts'
+import { listMyNotifications, markNotificationsRead, type AppNotification, type ReadTarget } from './api.ts'
 import { NotificationsContext, type NotificationsState } from './NotificationsContext.ts'
 
 /** Les annonces programmées n'émettent pas d'événement à leur publication : relecture périodique. */
@@ -53,19 +53,19 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   }, [userId, load])
 
   const markRead = useCallback(
-    async (announcementId?: string) => {
+    async (target: ReadTarget = {}) => {
       if (!userId) return
-      const hasUnread = notifications.some(
-        (n) => !n.read_at && (!announcementId || n.announcement_id === announcementId),
-      )
-      if (!hasUnread) return
+      const matches = (n: AppNotification) =>
+        !n.read_at &&
+        (!target.announcementId || n.announcement_id === target.announcementId) &&
+        (!target.kind || n.kind === target.kind) &&
+        (!target.notificationId || n.id === target.notificationId)
+      if (!notifications.some(matches)) return
       // Affichage immédiat, puis enregistrement.
       const now = new Date().toISOString()
-      setNotifications((list) =>
-        list.map((n) => (!n.read_at && (!announcementId || n.announcement_id === announcementId) ? { ...n, read_at: now } : n)),
-      )
+      setNotifications((list) => list.map((n) => (matches(n) ? { ...n, read_at: now } : n)))
       try {
-        await markNotificationsRead(announcementId)
+        await markNotificationsRead(target)
       } finally {
         await load()
       }
@@ -77,6 +77,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     () => ({
       notifications: userId ? notifications : [],
       unreadCount: userId ? notifications.filter((n) => !n.read_at).length : 0,
+      unreadAnnouncements: userId ? notifications.filter((n) => !n.read_at && n.kind === 'announcement').length : 0,
       markRead,
     }),
     [userId, notifications, markRead],

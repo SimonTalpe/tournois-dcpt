@@ -2,16 +2,24 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Notice, PrimaryButton } from '../../components/ui.tsx'
 import { listDartPeople, type DartPerson, type Participant } from './api.ts'
 import { MAX_PLAYERS, type GameMode } from './engine.ts'
-import { moveItem, newNameProblem, normalizeName, searchPeople, shuffled } from './setup.ts'
+import { moveItem, newNameProblem, normalizeName, rankedEligible, searchPeople, shuffled } from './setup.ts'
 import { newGameId } from './storage.ts'
 
-export type SetupValue = { participants: Participant[]; start: GameMode; doubleOut: boolean }
+export type SetupValue = {
+  participants: Participant[]
+  start: GameMode
+  doubleOut: boolean
+  /** Match classé (compte pour l'Elo) : seulement si rankedEligible. */
+  ranked: boolean
+}
 
 type Props = {
   /** Mode local (spectateur) : noms libres, rien n'est enregistré. */
   local: boolean
   initial: SetupValue
   onLaunch: (value: SetupValue) => void
+  /** Joueur qui tient le compteur (match classé : il doit en être, sauf l'admin). */
+  viewer: { profileId: string | null; isAdmin: boolean }
 }
 
 const KIND_LABELS: Record<Participant['ref']['kind'], string | null> = {
@@ -23,10 +31,11 @@ const KIND_LABELS: Record<Participant['ref']['kind'], string | null> = {
 }
 
 /** Configuration d'une partie : joueurs (ordre de jeu), 301/501, sortie sur double. */
-export function SetupScreen({ local, initial, onLaunch }: Props) {
+export function SetupScreen({ local, initial, onLaunch, viewer }: Props) {
   const [participants, setParticipants] = useState<Participant[]>(initial.participants)
   const [start, setStart] = useState<GameMode>(initial.start)
   const [doubleOut, setDoubleOut] = useState(initial.doubleOut)
+  const [ranked, setRanked] = useState(initial.ranked)
   const [people, setPeople] = useState<DartPerson[]>([])
   const [peopleError, setPeopleError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
@@ -44,6 +53,7 @@ export function SetupScreen({ local, initial, onLaunch }: Props) {
   }, [local])
 
   const full = participants.length >= MAX_PLAYERS
+  const canRank = !local && rankedEligible(participants, start, doubleOut, viewer)
   const suggestions = local || full ? [] : searchPeople(people, participants, query, query.trim() ? 6 : 4)
   const trimmed = query.trim().replace(/\s+/g, ' ')
   const exactSuggestion = suggestions.find((p) => normalizeName(p.full_name) === normalizeName(trimmed))
@@ -222,12 +232,38 @@ export function SetupScreen({ local, initial, onLaunch }: Props) {
         </label>
       </section>
 
+      {!local && (
+        <section className="space-y-2">
+          <label
+            className={`flex items-center justify-between gap-3 rounded-xl px-4 py-3 shadow-sm ${
+              canRank ? 'cursor-pointer bg-white' : 'bg-white/60 text-ink/50'
+            }`}
+          >
+            <span>
+              <span className="block font-medium">🏅 Match classé</span>
+              <span className="block text-xs text-ink/60">
+                {canRank
+                  ? 'Le résultat compte pour l’Elo des deux joueurs ; ton adversaire sera notifié.'
+                  : 'Possible à 2 joueurs avec compte (dont toi), en 301 sortie simple.'}
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              className="h-6 w-6 accent-court"
+              disabled={!canRank}
+              checked={canRank && ranked}
+              onChange={(e) => setRanked(e.target.checked)}
+            />
+          </label>
+        </section>
+      )}
+
       <PrimaryButton
         type="button"
         disabled={participants.length === 0}
-        onClick={() => onLaunch({ participants, start, doubleOut })}
+        onClick={() => onLaunch({ participants, start, doubleOut, ranked: canRank && ranked })}
       >
-        🎯 Lancer la partie
+        {canRank && ranked ? '🏅 Lancer le match classé' : '🎯 Lancer la partie'}
       </PrimaryButton>
     </div>
   )

@@ -21,6 +21,10 @@ export type SavedGame = {
   startedAt: string
   /** Résultat enregistré en base. */
   recorded: boolean
+  /** Match classé (2 comptes, 301, sortie simple) : compte pour l'Elo. */
+  ranked?: boolean
+  /** Match classé enregistré : écarts d'Elo (domicile = joueur qui tient le compteur, sauf admin). */
+  eloDeltas?: { profileId: string; delta: number }[]
   /**
    * Match ou départage de tournoi : joueurs et format imposés, résultat reporté dans le tournoi.
    * `id`, `config`, `events` et `startedAt` décrivent alors la manche en cours.

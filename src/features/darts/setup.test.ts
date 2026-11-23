@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { DartPerson, Participant } from './api.ts'
-import { moveItem, newNameProblem, normalizeName, searchPeople, shuffled } from './setup.ts'
+import { moveItem, newNameProblem, normalizeName, rankedEligible, searchPeople, shuffled } from './setup.ts'
 
 const people: DartPerson[] = [
   { kind: 'account', id: 'a1', full_name: 'Alice Martin' },
@@ -33,5 +33,21 @@ describe('configuration de la partie', () => {
     expect([...shuffled(items)].sort()).toEqual(items)
     expect(moveItem(items, 0, 2)).toEqual([2, 3, 1, 4, 5])
     expect(moveItem(items, 0, -1)).toBe(items)
+  })
+})
+
+describe('match classé au compteur', () => {
+  const account = (id: string): Participant => ({ key: id, name: id, ref: { kind: 'account', profileId: id } })
+  const me = { profileId: 'me', isAdmin: false }
+  it('2 comptes, 301, sortie simple, dont moi', () => {
+    expect(rankedEligible([account('me'), account('bob')], 301, false, me)).toBe(true)
+    expect(rankedEligible([account('me'), account('bob')], 501, false, me)).toBe(false)
+    expect(rankedEligible([account('me'), account('bob')], 301, true, me)).toBe(false)
+    expect(rankedEligible([account('me'), account('bob'), account('cid')], 301, false, me)).toBe(false)
+    expect(rankedEligible([account('me'), { key: 'x', name: 'X', ref: { kind: 'new' } }], 301, false, me)).toBe(false)
+  })
+  it('sans moi : seulement pour l’admin', () => {
+    expect(rankedEligible([account('ana'), account('bob')], 301, false, me)).toBe(false)
+    expect(rankedEligible([account('ana'), account('bob')], 301, false, { profileId: 'me', isAdmin: true })).toBe(true)
   })
 })

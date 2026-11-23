@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { to: '/accueil', label: 'Accueil', icon: '🏠', playersOnly: false },
   { to: '/tournois', label: 'Tournois', icon: '🏆', playersOnly: false },
   { to: '/annonces', label: 'Annonces', icon: '📣', playersOnly: false },
+  { to: '/classement', label: 'Classement', icon: '🏅', playersOnly: false },
   { to: '/compteur', label: 'Compteur', icon: '🎯', playersOnly: false },
   { to: '/profil', label: 'Profil', icon: '👤', playersOnly: true },
 ] as const
@@ -24,8 +25,8 @@ export function AppLayout() {
 
 /** Pastille « nouvelles annonces » sur l'entrée du menu. */
 function UnreadDot({ to }: { to: string }) {
-  const { unreadCount } = useNotifications()
-  if (to !== '/annonces' || unreadCount === 0) return null
+  const { unreadAnnouncements } = useNotifications()
+  if (to !== '/annonces' || unreadAnnouncements === 0) return null
   return <span className="ml-1 inline-block h-2 w-2 rounded-full bg-clay align-middle" aria-label="nouvelles annonces" />
 }
 
@@ -105,7 +106,7 @@ function Layout() {
 
       <nav
         className={`fixed inset-x-0 bottom-0 z-10 grid border-t border-court/20 bg-white pb-[env(safe-area-inset-bottom)] md:hidden ${
-          items.length === 5 ? 'grid-cols-5' : items.length === 4 ? 'grid-cols-4' : 'grid-cols-3'
+          items.length === 6 ? 'grid-cols-6' : items.length === 5 ? 'grid-cols-5' : items.length === 4 ? 'grid-cols-4' : 'grid-cols-3'
         }`}
         aria-label="Menu principal"
       >
@@ -114,7 +115,7 @@ function Layout() {
             key={item.to}
             to={item.to}
             className={({ isActive }) =>
-              `flex flex-col items-center gap-0.5 py-2 text-xs ${
+              `flex min-w-0 flex-col items-center gap-0.5 px-0.5 py-2 text-[11px] sm:text-xs ${
                 isActive ? 'font-semibold text-court' : 'text-ink/60'
               }`
             }
@@ -125,7 +126,7 @@ function Layout() {
                 <UnreadDot to={item.to} />
               </span>
             </span>
-            {item.label}
+            <span className="max-w-full truncate">{item.label}</span>
           </NavLink>
         ))}
       </nav>

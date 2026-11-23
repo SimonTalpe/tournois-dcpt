@@ -60,3 +60,19 @@ export function moveItem<T>(items: T[], from: number, to: number): T[] {
   copy.splice(to, 0, item)
   return copy
 }
+
+/**
+ * Match classé possible ? 2 comptes, 301, sortie simple (1 manche : format unique des matchs classés),
+ * et le joueur qui tient le compteur est l'un des deux (sauf l'admin).
+ */
+export function rankedEligible(
+  participants: Participant[],
+  start: number,
+  doubleOut: boolean,
+  viewer: { profileId: string | null; isAdmin: boolean },
+): boolean {
+  if (participants.length !== 2 || start !== 301 || doubleOut) return false
+  const ids = participants.map((p) => (p.ref.kind === 'account' ? p.ref.profileId : null))
+  if (ids.some((id) => id === null) || ids[0] === ids[1]) return false
+  return viewer.isAdmin || ids.includes(viewer.profileId)
+}
