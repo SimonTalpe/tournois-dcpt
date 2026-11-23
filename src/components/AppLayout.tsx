@@ -1,18 +1,23 @@
-import { Link, NavLink, Outlet, useNavigate } from 'react-router'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import { NotificationBell } from '../features/announcements/NotificationBell.tsx'
-import { useNotifications } from '../features/announcements/NotificationsContext.ts'
 import { NotificationsProvider } from '../features/announcements/NotificationsProvider.tsx'
 import { isAdmin, isPlayer, useAuth } from '../features/auth/AuthContext.ts'
+import { visibleNavCount } from '../lib/navOverflow.ts'
 import { APP_VERSION } from '../lib/version.ts'
 
 const NAV_ITEMS = [
   { to: '/accueil', label: 'Accueil', icon: '🏠', playersOnly: false },
   { to: '/tournois', label: 'Tournois', icon: '🏆', playersOnly: false },
-  { to: '/annonces', label: 'Annonces', icon: '📣', playersOnly: false },
   { to: '/classement', label: 'Classement', icon: '🏅', playersOnly: false },
   { to: '/compteur', label: 'Compteur', icon: '🎯', playersOnly: false },
   { to: '/profil', label: 'Profil', icon: '👤', playersOnly: true },
 ] as const
+
+type NavItem = (typeof NAV_ITEMS)[number]
+
+/** Espace entre deux entrées du menu du haut (classe `gap-1`). */
+const NAV_GAP = 4
 
 /** Mise en page commune : en-tête, menu en haut sur ordinateur, barre en bas sur mobile. */
 export function AppLayout() {
@@ -23,17 +28,11 @@ export function AppLayout() {
   )
 }
 
-/** Pastille « nouvelles annonces » sur l'entrée du menu. */
-function UnreadDot({ to }: { to: string }) {
-  const { unreadAnnouncements } = useNotifications()
-  if (to !== '/annonces' || unreadAnnouncements === 0) return null
-  return <span className="ml-1 inline-block h-2 w-2 rounded-full bg-clay align-middle" aria-label="nouvelles annonces" />
-}
-
 function Layout() {
   const auth = useAuth()
   const navigate = useNavigate()
-  const items = NAV_ITEMS.filter((item) => !item.playersOnly || isPlayer(auth))
+  const player = isPlayer(auth)
+  const items = useMemo(() => NAV_ITEMS.filter((item) => !item.playersOnly || player), [player])
   const who = auth.demoMode
     ? 'Maquette'
     : auth.access === 'spectator'
@@ -54,24 +53,9 @@ function Layout() {
             <span className="hidden lg:inline">Mini-pong et fléchettes</span>
             <span className="lg:hidden">MPF</span>
           </Link>
-          <nav className="hidden gap-1 md:flex" aria-label="Menu principal">
-            {items.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) =>
-                  `rounded-lg px-3 py-2 text-sm font-medium transition ${
-                    isActive ? 'bg-ball text-court' : 'hover:bg-court-light'
-                  }`
-                }
-              >
-                {item.label}
-                <UnreadDot to={item.to} />
-              </NavLink>
-            ))}
-          </nav>
-          <div className="flex min-w-0 items-center gap-2 text-sm">
-            <span className="truncate text-chalk/80" title={who}>
+          <TopNav items={items} />
+          <div className="flex min-w-0 items-center gap-2 text-sm md:shrink-0">
+            <span className="max-w-[9rem] truncate text-chalk/80 lg:max-w-[14rem]" title={who}>
               {who}
             </span>
             {!auth.demoMode && isPlayer(auth) && <NotificationBell />}
@@ -120,16 +104,126 @@ function Layout() {
               }`
             }
           >
-            <span aria-hidden="true" className="relative text-lg">
+            <span aria-hidden="true" className="text-lg">
               {item.icon}
-              <span className="absolute -top-0.5 -right-2">
-                <UnreadDot to={item.to} />
-              </span>
             </span>
             <span className="max-w-full truncate">{item.label}</span>
           </NavLink>
         ))}
       </nav>
     </div>
+  )
+}
+
+/**
+ * Menu du haut (ordinateur / tablette) : les entrées qui ne tiennent pas dans la largeur
+ * disponible passent dans un menu déroulant « Plus ».
+ */
+function TopNav({ items }: { items: readonly NavItem[] }) {
+  const rowRef = useRef<HTMLDivElement>(null)
+  const measureRef = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const [visible, setVisible] = useState(items.length)
+  const [open, setOpen] = useState(false)
+  const { pathname } = useLocation()
+
+  // Mesure la largeur de chaque entrée (copie invisible du menu) et la place disponible.
+  useLayoutEffect(() => {
+    const row = rowRef.current
+    const measure = measureRef.current
+    if (!row || !measure) return
+    const update = () => {
+      const children = Array.from(measure.children) as HTMLElement[]
+      const widths = children.slice(0, items.length).map((child) => child.offsetWidth)
+      const moreWidth = children[items.length]?.offsetWidth ?? 0
+      setVisible(visibleNavCount(widths, moreWidth, row.clientWidth, NAV_GAP))
+    }
+    update()
+    const observer = new ResizeObserver(update)
+    observer.observe(row)
+    observer.observe(measure)
+    return () => observer.disconnect()
+  }, [items])
+
+  // Fermeture du menu « Plus » : clic à l'extérieur ou touche Échap.
+  useEffect(() => {
+    if (!open) return
+    const onPointerDown = (event: PointerEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) setOpen(false)
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [open])
+
+  const shown = items.slice(0, visible)
+  const hidden = items.slice(visible)
+  const hiddenActive = hidden.some((item) => pathname === item.to || pathname.startsWith(`${item.to}/`))
+  const linkClass = 'whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition'
+
+  return (
+    <nav className="relative hidden min-w-0 flex-1 md:block" aria-label="Menu principal">
+      {/* Copie invisible servant uniquement à mesurer les largeurs. */}
+      <div
+        ref={measureRef}
+        aria-hidden="true"
+        className="pointer-events-none invisible absolute top-0 left-0 flex gap-1"
+      >
+        {items.map((item) => (
+          <span key={item.to} className={linkClass}>
+            {item.label}
+          </span>
+        ))}
+        <span className={linkClass}>Plus ▾</span>
+      </div>
+
+      <div ref={rowRef} className="flex w-full gap-1">
+        {shown.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            className={({ isActive }) => `${linkClass} ${isActive ? 'bg-ball text-court' : 'hover:bg-court-light'}`}
+          >
+            {item.label}
+          </NavLink>
+        ))}
+        {hidden.length > 0 && (
+          <div ref={menuRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setOpen((value) => !value)}
+              aria-expanded={open}
+              aria-haspopup="true"
+              className={`${linkClass} ${hiddenActive ? 'bg-ball text-court' : 'hover:bg-court-light'}`}
+            >
+              Plus ▾
+            </button>
+            {open && (
+              <div className="absolute top-full left-0 z-20 mt-1 min-w-[11rem] overflow-hidden rounded-lg bg-white py-1 text-ink shadow-lg ring-1 ring-court/20">
+                {hidden.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    onClick={() => setOpen(false)}
+                    className={({ isActive }) =>
+                      `flex items-center gap-2 px-4 py-2 text-sm ${isActive ? 'bg-ball/40 font-semibold text-court' : 'hover:bg-chalk'}`
+                    }
+                  >
+                    <span aria-hidden="true">{item.icon}</span>
+                    {item.label}
+                  </NavLink>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </nav>
   )
 }
