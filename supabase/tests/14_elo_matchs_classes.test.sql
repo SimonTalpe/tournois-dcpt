@@ -251,9 +251,9 @@ select tests.assert((select read_at is not null from public.notifications where 
 -- ---------------------------------------------------------------- Recalcul après une modification de tournoi
 select count(*) from public.get_elo_history('mini_pong');
 reset role;
-select tests.assert((select not dirty from public.elo_state where discipline = 'mini_pong'), 'mini-pong à jour après lecture');
+select tests.assert(not exists (select 1 from public.elo_dirty where discipline = 'mini_pong'), 'mini-pong à jour après lecture');
 update public.matches set winner_player_id = :pd where id = :m1;
-select tests.assert((select dirty from public.elo_state where discipline = 'mini_pong'), 'résultat de tournoi modifié : à recalculer');
+select tests.assert(exists (select 1 from public.elo_dirty where discipline = 'mini_pong'), 'résultat de tournoi modifié : à recalculer');
 set local role authenticated;
 select set_config('request.jwt.claim.sub', :alice_id, true);
 select tests.assert(

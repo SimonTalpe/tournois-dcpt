@@ -34,3 +34,15 @@ if [ -d node_modules/pg ]; then
   echo "→ simulation de tournois complets"
   node scripts/simulate-db.ts "$DB" "${SIMULATION_TOURNAMENTS:-80}" ${SIMULATION_SEED:-}
 fi
+
+# Concurrence de l'Elo et des matchs classés (clients en parallèle sur une base neuve).
+if [ -d node_modules/pg ]; then
+  echo "→ concurrence Elo / matchs classés"
+  DB2="mpf_stress_$$"
+  createdb "$DB2"
+  trap 'dropdb --if-exists "$DB"; dropdb --if-exists "$DB2"' EXIT
+  sed '/^create role /d' supabase/tests/00_fake_supabase_auth.sql | "${PSQL[@]}" -d "$DB2"
+  "${PSQL[@]}" -d "$DB2" -c "create publication supabase_realtime;"
+  for f in supabase/migrations/*.sql; do "${PSQL[@]}" -d "$DB2" -f "$f" > /dev/null; done
+  node scripts/stress-elo.ts "$DB2" "${STRESS_CLIENTS:-8}" "${STRESS_OPS:-100}"
+fi

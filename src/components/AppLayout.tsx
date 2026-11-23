@@ -115,8 +115,8 @@ function Layout() {
             key={item.to}
             to={item.to}
             className={({ isActive }) =>
-              `flex min-w-0 flex-col items-center gap-0.5 px-0.5 py-2 text-[11px] sm:text-xs ${
-                isActive ? 'font-semibold text-court' : 'text-ink/60'
+              `flex min-w-0 flex-col items-center gap-0.5 px-0 py-2 text-[10px] tracking-tighter min-[360px]:px-0.5 min-[360px]:tracking-tight min-[400px]:text-[11px] sm:text-xs sm:tracking-normal ${
+                isActive ? 'text-court min-[360px]:font-semibold' : 'text-ink/60'
               }`
             }
           >

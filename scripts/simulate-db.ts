@@ -62,6 +62,7 @@ const stats = {
   rankedDeletions: 0,
   rankedLimitRefusals: 0,
   eloRows: 0,
+  eloMerges: 0,
 }
 
 class Failure extends Error {}
@@ -704,6 +705,30 @@ async function playRankedAndCheckElo() {
     }
   }
 
+  // Comptes et fiches modifiés après coup : l'Elo doit suivre (recalcul complet).
+  const [someone, other] = [pick(accounts), pick(accounts)]
+  await as(ADMIN, `select public.admin_set_account_status($1, 'disabled')`, [someone])
+  await expectRefusal(
+    as(other === someone ? ADMIN : other, `select public.record_ranked_match($1, 'darts', $2, $3, '{"winner":"home"}')`, [
+      randomUUID(),
+      other === someone ? accounts.find((a) => a !== someone) : other,
+      someone,
+    ]),
+    'RANKED_PLAYER_INACTIVE',
+    'match classé contre un compte désactivé',
+  )
+  await as(ADMIN, `select public.admin_set_account_status($1, 'active')`, [someone])
+  const nameOnly = await su<{ id: string }>(`select id from public.players where profile_id is null order by id limit 3`)
+  for (const { id } of nameOnly) {
+    try {
+      await as(ADMIN, `select public.admin_link_player_to_account($1, $2)`, [id, pick(accounts)])
+      stats.eloMerges++
+    } catch (e) {
+      assert(String((e as Error).message).includes('MERGE_CONFLICT'), `rattachement : erreur inattendue ${(e as Error).message}`)
+    }
+  }
+  await as(ADMIN, `select public.admin_delete_account($1)`, [pick(accounts.filter((a) => a !== someone))])
+
   for (const discipline of ['mini_pong', 'darts'] as const) {
     const events = await su<{
       source: 'tournament' | 'ranked'
@@ -743,7 +768,7 @@ async function playRankedAndCheckElo() {
       ),
     )
     const actual = await as<{ player_id: string; seq: number; match_id: string; rating_after: number; delta: number }>(
-      pick(accounts),
+      ADMIN,
       `select player_id, seq, match_id, rating_after, delta from public.get_elo_history($1)`,
       [discipline],
     )
