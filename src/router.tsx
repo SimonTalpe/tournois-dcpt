@@ -8,6 +8,7 @@ import { DartsPage } from './pages/DartsPage.tsx'
 import { EntryPage } from './pages/EntryPage.tsx'
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage.tsx'
 import { HomePage } from './pages/HomePage.tsx'
+import { LeaderboardPage } from './pages/LeaderboardPage.tsx'
 import { LoginPage } from './pages/LoginPage.tsx'
 import { NotFoundPage } from './pages/NotFoundPage.tsx'
 import { PlayerPage } from './pages/PlayerPage.tsx'
@@ -43,6 +44,7 @@ export const router = createBrowserRouter([
       { path: '/tournois', element: <TournamentsPage /> },
       { path: '/tournois/:tournamentId', element: <TournamentPage /> },
       { path: '/annonces', element: <AnnouncementsPage /> },
+      { path: '/classement', element: <LeaderboardPage /> },
       { path: '/compteur', element: <DartsPage /> },
       {
         path: '/profil',

@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
+import { useAuth } from '../auth/AuthContext.ts'
+import { DISCIPLINE_ICONS, DISCIPLINE_LABELS } from '../tournaments/types.ts'
+import { rankedNotificationText, type AppNotification } from './api.ts'
 import { formatDateTime } from './dates.ts'
 import { useNotifications } from './NotificationsContext.ts'
 
 /** Cloche de l'en-tête : nombre de notifications non lues et liste déroulante. */
 export function NotificationBell() {
   const { notifications, unreadCount, markRead } = useNotifications()
+  const myProfileId = useAuth().profile?.id ?? null
   const [open, setOpen] = useState(false)
   const navigate = useNavigate()
   const panelRef = useRef<HTMLDivElement>(null)
@@ -27,11 +31,14 @@ export function NotificationBell() {
     }
   }, [open])
 
-  function openNotification(announcementId: string | null) {
+  function openNotification(n: AppNotification) {
     setOpen(false)
-    if (announcementId) {
-      void markRead(announcementId)
-      navigate(`/annonces#annonce-${announcementId}`)
+    if (n.kind === 'ranked_match' && n.ranked_match_id) {
+      void markRead({ notificationId: n.id })
+      navigate(`/classement?discipline=${n.ranked_match?.discipline ?? 'mini_pong'}&match=${n.ranked_match_id}`)
+    } else if (n.announcement_id) {
+      void markRead({ announcementId: n.announcement_id })
+      navigate(`/annonces#annonce-${n.announcement_id}`)
     }
   }
 
@@ -72,18 +79,37 @@ export function NotificationBell() {
                 <li key={n.id}>
                   <button
                     type="button"
-                    onClick={() => openNotification(n.announcement_id)}
+                    onClick={() => openNotification(n)}
                     className={`flex w-full gap-2 px-3 py-2.5 text-left text-sm hover:bg-chalk ${n.read_at ? 'text-ink/60' : ''}`}
                   >
-                    <span aria-hidden="true">📣</span>
-                    <span className="min-w-0 flex-1">
-                      <span className={`block truncate ${n.read_at ? '' : 'font-semibold'}`}>
-                        {n.announcement?.title ?? 'Nouvelle annonce'}
-                      </span>
-                      <span className="block text-xs text-ink/50">
-                        Annonce · {formatDateTime(n.announcement?.published_at ?? n.created_at)}
-                      </span>
-                    </span>
+                    {n.kind === 'ranked_match' ? (
+                      <>
+                        <span aria-hidden="true">{n.recipient_won ? '🏆' : '🏅'}</span>
+                        <span className="min-w-0 flex-1">
+                          <span className={`block ${n.read_at ? '' : 'font-semibold'}`}>
+                            {rankedNotificationText(n, myProfileId) ?? 'Match classé'}
+                          </span>
+                          <span className="block text-xs text-ink/50">
+                            {n.ranked_match
+                              ? `${DISCIPLINE_ICONS[n.ranked_match.discipline]} Match classé de ${DISCIPLINE_LABELS[n.ranked_match.discipline].toLowerCase()}`
+                              : 'Match classé'}{' '}
+                            · {formatDateTime(n.created_at)}
+                          </span>
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span aria-hidden="true">📣</span>
+                        <span className="min-w-0 flex-1">
+                          <span className={`block truncate ${n.read_at ? '' : 'font-semibold'}`}>
+                            {n.announcement?.title ?? 'Nouvelle annonce'}
+                          </span>
+                          <span className="block text-xs text-ink/50">
+                            Annonce · {formatDateTime(n.announcement?.published_at ?? n.created_at)}
+                          </span>
+                        </span>
+                      </>
+                    )}
                     {!n.read_at && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-clay" aria-label="non lue" />}
                   </button>
                 </li>

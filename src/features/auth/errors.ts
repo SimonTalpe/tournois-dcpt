@@ -67,6 +67,13 @@ const MESSAGES_BY_DB_ERROR: Record<string, string> = {
   TIEBREAK_ALREADY_SET: 'Ce départage a déjà un résultat (validé depuis un autre téléphone ?) : ta partie n’est pas enregistrée.',
   INVALID_LEGS: 'Score en manches invalide : le vainqueur doit avoir toutes les manches requises, le perdant moins.',
   DUPLICATE_DART_PLAYER: 'Un même joueur figure deux fois dans la partie.',
+  RANKED_DAILY_LIMIT: 'Déjà 3 matchs classés aujourd’hui contre ce joueur dans cette discipline : reviens demain !',
+  RANKED_SELF: 'Choisis deux joueurs différents.',
+  RANKED_LOCKED:
+    'Ce match classé ne peut plus être modifié par toi (délai de 24 heures dépassé ou saisi par un autre) : contacte l’admin.',
+  RANKED_PLAYER_INACTIVE: 'Ce joueur ne peut pas jouer de match classé (compte désactivé ou email non confirmé).',
+  INVALID_RANKED_SCORE: 'Score invalide : choisis le vainqueur (et un reste du perdant entre 1 et 301).',
+  INVALID_RANKED_GAME: 'Résultat de partie incohérent : le match classé n’a pas pu être enregistré.',
   MERGE_CONFLICT:
     "Ce compte et ce nom seul jouent dans un même tournoi : fusion impossible. Remplace d'abord l'un des deux dans ce tournoi.",
 }

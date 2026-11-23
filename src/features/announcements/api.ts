@@ -55,26 +55,68 @@ export async function deleteAnnouncement(id: string): Promise<void> {
 
 export type AppNotification = {
   id: string
-  kind: 'announcement'
+  kind: 'announcement' | 'ranked_match'
   announcement_id: string | null
+  ranked_match_id: string | null
   created_at: string
   read_at: string | null
+  /** Match classé : écart d'Elo et résultat du destinataire, auteur de la saisie. */
+  elo_delta: number | null
+  recipient_won: boolean | null
+  actor_id: string | null
+  actor: { full_name: string } | null
   announcement: { title: string; published_at: string } | null
+  ranked_match: {
+    discipline: 'mini_pong' | 'darts'
+    home: { full_name: string; profile_id: string | null } | null
+    away: { full_name: string; profile_id: string | null } | null
+  } | null
 }
 
-/** Notifications de la session (annonces en ligne uniquement), les plus récentes d'abord. */
+/** Notifications de la session (annonces en ligne, matchs classés), les plus récentes d'abord. */
 export async function listMyNotifications(): Promise<AppNotification[]> {
   const rows = check(
     await db()
       .from('notifications')
-      .select('id, kind, announcement_id, created_at, read_at, announcement:announcements(title, published_at)')
+      .select(
+        'id, kind, announcement_id, ranked_match_id, created_at, read_at, elo_delta, recipient_won, actor_id, ' +
+          'actor:profiles!notifications_actor_id_fkey(full_name), ' +
+          'announcement:announcements(title, published_at), ' +
+          'ranked_match:ranked_matches(discipline, ' +
+          'home:players!ranked_matches_home_player_id_fkey(full_name, profile_id), ' +
+          'away:players!ranked_matches_away_player_id_fkey(full_name, profile_id))',
+      )
+      .order('created_at', { ascending: false })
       .limit(50),
   ) as unknown as AppNotification[]
   const when = (n: AppNotification) => n.announcement?.published_at ?? n.created_at
   return rows.sort((a, b) => when(b).localeCompare(when(a)))
 }
 
-/** Marque comme lues toutes les notifications (ou celles d'une annonce). */
-export async function markNotificationsRead(announcementId?: string): Promise<void> {
-  check(await db().rpc('mark_notifications_read', { p_announcement_id: announcementId ?? null }))
+/** Ce qui est marqué comme lu : tout, une annonce, un type de notification ou une notification. */
+export type ReadTarget = { announcementId?: string; kind?: AppNotification['kind']; notificationId?: string }
+
+export async function markNotificationsRead(target: ReadTarget = {}): Promise<void> {
+  check(
+    await db().rpc('mark_notifications_read', {
+      p_announcement_id: target.announcementId ?? null,
+      p_kind: target.kind ?? null,
+      p_notification_id: target.notificationId ?? null,
+    }),
+  )
+}
+
+/** Texte d'une notification de match classé, pour son destinataire (null si autre type). */
+export function rankedNotificationText(n: AppNotification, myProfileId: string | null): string | null {
+  if (n.kind !== 'ranked_match' || !n.ranked_match) return null
+  const { home, away } = n.ranked_match
+  const opponent = home?.profile_id === myProfileId ? away : home
+  const actor = n.actor?.full_name ?? 'Quelqu’un'
+  const actorIsOpponent = Boolean(opponent?.profile_id && opponent.profile_id === n.actor_id)
+  const result = n.recipient_won ? 'victoire' : 'défaite'
+  const delta = n.elo_delta === null ? '' : ` (${n.elo_delta > 0 ? '+' : n.elo_delta < 0 ? '−' : '±'}${Math.abs(n.elo_delta)} Elo)`
+  if (actorIsOpponent) {
+    return `${actor} a enregistré ${n.recipient_won ? 'sa défaite' : 'sa victoire'} contre toi${delta}`
+  }
+  return `${actor} a enregistré ta ${result} contre ${opponent?.full_name ?? 'ton adversaire'}${delta}`
 }

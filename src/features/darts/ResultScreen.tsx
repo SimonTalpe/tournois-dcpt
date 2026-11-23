@@ -1,4 +1,5 @@
 import { Notice, PrimaryButton } from '../../components/ui.tsx'
+import { formatDelta } from '../ranking/leaderboard.ts'
 import { medal } from './darts.ts'
 import { ranking, type GameConfig, type GameState } from './engine.ts'
 
@@ -8,7 +9,13 @@ type Props = {
   config: GameConfig
   state: GameState
   save: SaveStatus
+  /** Match classé : compte pour l'Elo. */
+  ranked?: boolean
+  /** Match classé enregistré : écarts d'Elo. */
+  eloDeltas?: { name: string; delta: number }[]
   onSave: () => void
+  /** Match classé refusé (ex. limite quotidienne) : enregistrer comme partie libre. */
+  onSaveUnranked?: () => void
   onUndo: () => void
   onRematch: () => void
   onNewGame: () => void
@@ -21,7 +28,7 @@ const TITLES = {
 } as const
 
 /** Fin de partie : classement, enregistrement du résultat, revanche. */
-export function ResultScreen({ config, state, save, onSave, onUndo, onRematch, onNewGame }: Props) {
+export function ResultScreen({ config, state, save, ranked = false, eloDeltas, onSave, onSaveUnranked, onUndo, onRematch, onNewGame }: Props) {
   const phase = state.phase === 'over' || state.phase === 'stopped' || state.phase === 'cancelled' ? state.phase : 'over'
   const rows = ranking(state)
   const recordable = phase !== 'cancelled'
@@ -32,6 +39,7 @@ export function ResultScreen({ config, state, save, onSave, onUndo, onRematch, o
       <div>
         <h2 className="text-2xl font-bold text-court">{TITLES[phase]}</h2>
         <p className="text-sm text-ink/60">
+          {ranked && '🏅 Match classé · '}
           {config.start} · {config.doubleOut ? 'sortie double' : 'sortie simple'}
         </p>
       </div>
@@ -56,14 +64,38 @@ export function ResultScreen({ config, state, save, onSave, onUndo, onRematch, o
       )}
 
       {recordable && save.kind === 'local' && <Notice>👀 Mode local : résultat non enregistré.</Notice>}
-      {recordable && save.kind === 'saved' && <Notice tone="success">✅ Résultat enregistré.</Notice>}
+      {recordable && save.kind === 'saved' && (
+        <Notice tone="success">
+          ✅ {ranked ? 'Match classé enregistré' : 'Résultat enregistré'}.
+          {eloDeltas && eloDeltas.length > 0 && (
+            <span className="block">
+              Elo :{' '}
+              {eloDeltas.map((d, i) => (
+                <span key={d.name} className="font-semibold tabular-nums">
+                  {i > 0 && ' · '}
+                  {d.name} {formatDelta(d.delta)}
+                </span>
+              ))}
+            </span>
+          )}
+        </Notice>
+      )}
       {recordable && save.kind === 'error' && <Notice tone="error">{save.message}</Notice>}
 
       <div className="space-y-2">
         {recordable && (save.kind === 'idle' || save.kind === 'saving' || save.kind === 'error') && (
           <PrimaryButton type="button" busy={save.kind === 'saving'} onClick={onSave}>
-            {save.kind === 'error' ? 'Réessayer l’enregistrement' : '✅ Valider et enregistrer le résultat'}
+            {save.kind === 'error' ? 'Réessayer l’enregistrement' : ranked ? '🏅 Valider le match classé' : '✅ Valider et enregistrer le résultat'}
           </PrimaryButton>
+        )}
+        {recordable && ranked && save.kind === 'error' && onSaveUnranked && (
+          <button
+            type="button"
+            onClick={onSaveUnranked}
+            className="w-full rounded-xl border border-court/30 bg-white py-3 font-semibold text-court"
+          >
+            Enregistrer comme partie libre (sans Elo)
+          </button>
         )}
         {(!recordable || save.kind === 'saved' || save.kind === 'local') && (
           <>

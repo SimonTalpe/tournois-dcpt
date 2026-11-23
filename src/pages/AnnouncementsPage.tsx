@@ -19,7 +19,7 @@ export function AnnouncementsPage() {
   const auth = useAuth()
   const admin = isAdmin(auth)
   const { hash } = useLocation()
-  const { markRead, unreadCount } = useNotifications()
+  const { markRead, unreadAnnouncements } = useNotifications()
   const [announcements, setAnnouncements] = useState<Announcement[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState<'new' | string | null>(null)
@@ -58,8 +58,8 @@ export function AnnouncementsPage() {
 
   // Page consultée : les notifications d'annonces sont lues.
   useEffect(() => {
-    if (unreadCount > 0) void markRead()
-  }, [unreadCount, markRead])
+    if (unreadAnnouncements > 0) void markRead({ kind: 'announcement' })
+  }, [unreadAnnouncements, markRead])
 
   // Arrivée depuis une notification : on fait défiler jusqu'à l'annonce.
   const targetId = hash.startsWith('#annonce-') ? hash.slice('#annonce-'.length) : null

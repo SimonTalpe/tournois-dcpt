@@ -47,7 +47,7 @@ export function ProfilePage() {
         <p className="text-ink/60">Chargement…</p>
       ) : playerId === null ? (
         <div className="rounded-2xl border border-dashed border-court/30 bg-white p-4 text-sm text-ink/70">
-          Pas encore de tournoi joué : ton historique et tes statistiques apparaîtront ici.
+          Pas encore de match joué : ton Elo, ton historique et tes statistiques apparaîtront ici.
         </div>
       ) : (
         <PlayerStatsView playerId={playerId} />
