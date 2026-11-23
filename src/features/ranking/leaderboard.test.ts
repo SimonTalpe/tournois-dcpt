@@ -101,4 +101,38 @@ describe('leaderboard', () => {
     expect(formatDelta(-9)).toBe('−9')
     expect(formatDelta(0)).toBe('±0')
   })
+
+  it('campagne : lignes reçues dans le désordre, joueur classé pile à 3 matchs', () => {
+    const shuffled = [...history('ana', [w(20), l(10), w(15)])].reverse()
+    const board = buildLeaderboard(shuffled, NOW)
+    expect(board.ranked).toHaveLength(1)
+    expect(board.ranked[0]).toMatchObject({ rating: 1225, games: 3, wins: 2, losses: 1, streak: 1, rank: 1 })
+  })
+
+  it('campagne : ex æquo il y a 7 jours puis départagés', () => {
+    const board = buildLeaderboard(
+      [
+        ...history('ana', [w(10, 9), w(10, 9), w(10, 9), w(5, 1)]),
+        ...history('bob', [w(10, 9), w(10, 9), w(10, 9), l(5, 1)]),
+      ],
+      NOW,
+    )
+    // Il y a 7 jours : tous deux 1ers ex æquo. Aujourd'hui : ana 1re (=), bob 2e (▼1).
+    expect(board.ranked.map((e) => [e.name, e.rank, e.rankChange])).toEqual([
+      ['ana', 1, 0],
+      ['bob', 2, -1],
+    ])
+  })
+
+  it('campagne : match pile à la limite des 7 jours compté dans le passé', () => {
+    const board = buildLeaderboard(
+      [...history('ana', [w(10, 7), w(10, 7), w(10, 7)]), ...history('bob', [w(20, 7), w(20, 7), w(20, 7)])],
+      NOW,
+    )
+    expect(board.ranked.every((e) => e.rankChange === 0)).toBe(true)
+  })
+
+  it('campagne : une série de défaites n’est pas affichée comme série en cours', () => {
+    expect(playerElo(history('ana', [w(10), l(10), l(10), l(10)]))?.streak).toBe(-3)
+  })
 })
