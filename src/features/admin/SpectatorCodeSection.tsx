@@ -46,9 +46,9 @@ export function SpectatorCodeSection() {
   }
 
   return (
-    <section className="space-y-3 rounded-2xl bg-white p-4 shadow-sm">
-      <h2 className="text-lg font-bold text-court">Code spectateur</h2>
-      <p className="text-sm text-ink/70">
+    <section className="space-y-3 bg-mist p-5">
+      <h2 className="font-display text-[30px] leading-none font-extrabold">Code spectateur</h2>
+      <p className="text-sm text-muted">
         {status?.is_set
           ? `Un code est défini (modifié le ${dateTimeFormat.format(new Date(status.updated_at))}). Il n'est jamais réaffiché.`
           : "Aucun code défini : l'accès « Regarder » est fermé."}

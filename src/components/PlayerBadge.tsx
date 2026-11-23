@@ -8,7 +8,7 @@ export function PlayerBadge({ fullName }: Props) {
     <span
       title={fullName}
       aria-label={fullName}
-      className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-court text-sm font-semibold text-chalk"
+      className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-black text-sm font-bold text-white"
     >
       {getInitials(fullName)}
     </span>

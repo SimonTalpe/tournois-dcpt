@@ -42,11 +42,11 @@ export function MatchCard({
     const isMe = Boolean(playerId && playerId === highlightPlayerId)
     const isWinner = Boolean(playerId && playerId === match.winner_player_id && !isBye)
     if (isBye && slot === 'away') {
-      return <div className="px-2.5 py-1.5 text-xs text-ink/40 italic">Exempt</div>
+      return <div className="px-2.5 py-1.5 text-xs text-muted italic">Exempt</div>
     }
     return (
       <div
-        className={`flex items-center justify-between gap-2 px-2.5 py-1.5 text-sm ${isMe ? 'bg-ball/40' : ''} ${
+        className={`flex items-center justify-between gap-2 px-2.5 py-2 text-[15px] ${isMe ? 'bg-ochre text-white' : ''} ${
           isWinner ? 'font-bold' : ''
         }`}
       >
@@ -55,16 +55,16 @@ export function MatchCard({
             {players.get(playerId)?.full_name ?? 'Joueur inconnu'}
           </span>
         ) : (
-          <span className="truncate text-ink/40 italic">
+          <span className="truncate text-muted italic">
             {placeholderLabel(sources.get(`${match.id}:${slot}`), numbers)}
           </span>
         )}
         <span className="flex shrink-0 items-center gap-1.5">
-          {slot === 'home' && !isBye && <span className="text-[10px] text-ink/40 uppercase">dom.</span>}
+          {slot === 'home' && !isBye && <span className={`text-[11px] ${isMe ? 'text-white' : 'text-muted'}`}>dom.</span>}
           {won && <span className="w-4 text-center tabular-nums">{won[slot]}</span>}
           {played && discipline === 'darts' && !won && isWinner && <span aria-label="vainqueur">✓</span>}
           {isWalkover && playerId && playerId === match.forfeit_player_id && (
-            <span className="text-[10px] font-semibold text-clay uppercase">forfait</span>
+            <span className="text-[11px] font-semibold">forfait</span>
           )}
         </span>
       </div>
@@ -78,27 +78,27 @@ export function MatchCard({
   return (
     <Tag
       {...(clickable ? { type: 'button' as const, onClick: () => onOpen?.(match.id) } : {})}
-      className={`block w-full overflow-hidden rounded-lg border bg-white text-left shadow-sm ${
-        isBye ? 'border-dashed border-ink/20' : 'border-ink/15'
-      } ${clickable ? 'transition hover:border-court/50 hover:shadow' : ''}`}
+      className={`block w-full overflow-hidden border-2 bg-white text-left ${
+        isBye ? 'border-dashed border-black' : 'border-black'
+      } ${clickable ? 'hover:bg-mist' : ''}`}
     >
       {number && (
-        <div className="flex items-center justify-between bg-court/5 px-2.5 py-0.5 text-[11px] text-ink/50">
+        <div className="flex items-center justify-between bg-mist px-2.5 py-0.5 text-[11px] text-muted">
           <span>M{number}</span>
-          {isBye && <span>qualifié d'office</span>}
-          {clickable && match.status === 'pending' && <span className="text-court">à jouer ›</span>}
-          {played && <span>joué</span>}
-          {isWalkover && <span className="text-clay">forfait</span>}
+          {isBye && <span>Qualifié d'office</span>}
+          {clickable && match.status === 'pending' && <span className="font-semibold text-black">À jouer</span>}
+          {played && <span>Joué</span>}
+          {isWalkover && <span className="font-semibold text-ochre-text">Forfait</span>}
         </div>
       )}
-      <div className="divide-y divide-ink/10">
+      <div className="divide-y divide-black">
         {row('home')}
         {row('away')}
       </div>
       {match.status === 'pending' && (match.scheduled_at || locationName) && (
-        <div className="truncate border-t border-ink/10 bg-ball/20 px-2.5 py-0.5 text-[11px] text-ink/70">
+        <div className="truncate border-t border-black bg-mist px-2.5 py-1 text-xs text-black">
           {match.scheduled_at && formatSchedule(match.scheduled_at)}
-          {match.scheduled_at && locationName && ' · '}
+          {match.scheduled_at && locationName && ', '}
           {locationName}
         </div>
       )}

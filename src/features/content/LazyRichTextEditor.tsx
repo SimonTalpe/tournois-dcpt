@@ -5,7 +5,7 @@ const Editor = lazy(() => import('./RichTextEditor.tsx').then((m) => ({ default:
 
 export function LazyRichTextEditor(props: ComponentProps<typeof Editor>) {
   return (
-    <Suspense fallback={<div className="min-h-44 rounded-xl border border-ink/20 bg-white p-3 text-sm text-ink/50">Chargement de l’éditeur…</div>}>
+    <Suspense fallback={<div className="min-h-44 rounded-xl border border-black bg-white p-3 text-sm text-muted">Chargement de l’éditeur…</div>}>
       <Editor {...props} />
     </Suspense>
   )

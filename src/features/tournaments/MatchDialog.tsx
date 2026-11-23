@@ -163,7 +163,7 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
         role="dialog"
         aria-modal="true"
         aria-labelledby="match-dialog-title"
-        className="max-h-[92vh] w-full max-w-md space-y-4 overflow-y-auto rounded-t-3xl bg-white p-5 shadow-xl sm:rounded-3xl"
+        className="max-h-[92vh] w-full max-w-md space-y-4 overflow-y-auto rounded-t-3xl bg-white p-5 border-t-4 border-black sm:border-2 sm:rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
         <header className="flex items-start justify-between gap-3">
@@ -171,7 +171,7 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
             <h2 id="match-dialog-title" className="text-lg font-bold text-court">
               {number ? `Match M${number}` : pool ? `Poule ${pool.label}` : 'Match'}
             </h2>
-            <p className="text-sm text-ink/60">
+            <p className="text-sm text-muted">
               {round?.bracket === 'pool' ? 'Poules' : round?.name}
               {round && ` · ${gameFormatLabel(tournament.discipline, round)}`}
             </p>
@@ -190,17 +190,17 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
               <li
                 key={side}
                 className={`flex items-center justify-between gap-2 rounded-xl px-3 py-2 ${
-                  isWinner ? 'bg-court/10 font-bold text-court' : 'bg-chalk'
+                  isWinner ? 'bg-mist font-bold text-court' : 'bg-chalk'
                 } ${id && id === viewer.playerId ? 'ring-2 ring-ball' : ''}`}
               >
                 <span className="truncate">
                   {name(id)}
-                  {side === 'home' && <span className="ml-2 text-[10px] font-normal text-ink/40 uppercase">dom.</span>}
+                  {side === 'home' && <span className="ml-2 text-[10px] font-normal text-muted">dom.</span>}
                 </span>
                 {played && (
                   <span className="shrink-0">{isDarts && !showDartLegs ? (isWinner ? 'Vainqueur' : '') : won[side]}</span>
                 )}
-                {isForfeit && <span className="shrink-0 text-xs font-semibold text-clay uppercase">forfait</span>}
+                {isForfeit && <span className="shrink-0 text-xs font-semibold text-clay">forfait</span>}
               </li>
             )
           })}
@@ -233,18 +233,18 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
               />
             )}
             {match.result_at && (
-              <p className="text-xs text-ink/50">
+              <p className="text-xs text-muted">
                 Saisi {author ? `par ${author}` : match.result_by_admin ? "par l'admin" : ''}
                 {match.result_by_admin && author ? ' (admin)' : ''} le {dateTimeFormat.format(new Date(match.result_at))}
               </p>
             )}
           </div>
         )}
-        {match.status === 'pending' && !rights.canEdit && <p className="text-sm text-ink/60">Match à jouer.</p>}
+        {match.status === 'pending' && !rights.canEdit && <p className="text-sm text-muted">Match à jouer.</p>}
         {!rights.canEdit && rights.reason && (played || match.pool_id) && <Notice>{rights.reason}</Notice>}
 
         {canAct && !poolLocked && (match.status === 'pending' || match.status === 'walkover' || match.status === 'cancelled') && (
-          <div className="space-y-2 border-t border-ink/10 pt-4">
+          <div className="space-y-2 border-t border-black pt-4">
             <h3 className="font-semibold">Actions admin</h3>
             <div className="flex flex-wrap gap-2">
               {match.status === 'pending' && (
@@ -320,10 +320,10 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
         )}
 
         {rights.canEdit && (
-          <div className="space-y-3 border-t border-ink/10 pt-4">
+          <div className="space-y-3 border-t border-black pt-4">
             <h3 className="font-semibold">{played ? 'Corriger le résultat' : 'Saisir le résultat'}</h3>
             {rights.deadline && (
-              <p className="text-xs text-ink/60">Correction possible jusqu'à {timeFormat.format(rights.deadline)}.</p>
+              <p className="text-xs text-muted">Correction possible jusqu'à {timeFormat.format(rights.deadline)}.</p>
             )}
             {isDarts && match.status === 'pending' && (
               <div className="space-y-1">
@@ -331,11 +331,11 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
                   type="button"
                   onClick={playWithCounter}
                   disabled={busy}
-                  className="w-full rounded-xl bg-ball px-4 py-3 font-semibold text-court shadow-sm transition active:scale-[0.98] disabled:opacity-60"
+                  className="w-full rounded-xl bg-ochre px-4 py-3 font-semibold text-white transition active:scale-[0.98] disabled:opacity-60"
                 >
-                  🎯 Jouer au compteur
+                  Jouer au compteur
                 </button>
-                <p className="text-center text-xs text-ink/60">
+                <p className="text-center text-xs text-muted">
                   {round ? gameFormatLabel(tournament.discipline, round) : ''} · {name(match.home_player_id)} commence.
                   Ou saisis le résultat à la main :
                 </p>
@@ -352,16 +352,16 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
                       aria-pressed={dartWinner === id}
                       onClick={() => setDartWinner(id)}
                       className={`rounded-xl border px-3 py-3 text-left font-medium transition ${
-                        dartWinner === id ? 'border-court bg-court text-chalk' : 'border-ink/20 hover:bg-court/10'
+                        dartWinner === id ? 'border-court bg-court text-chalk' : 'border-black hover:bg-mist'
                       }`}
                     >
-                      🎯 Victoire de {name(id)}
+                      Victoire de {name(id)}
                     </button>
                   )
                 })}
                 {setsToWin > 1 && (
                   <fieldset className="space-y-1">
-                    <legend className="text-sm text-ink/70">
+                    <legend className="text-sm text-muted">
                       Manches gagnées par {dartWinner ? `l'adversaire de ${name(dartWinner)}` : 'le perdant'}
                     </legend>
                     <div className="flex gap-2">
@@ -372,7 +372,7 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
                           aria-pressed={loserLegs === n}
                           onClick={() => setLoserLegs(n)}
                           className={`flex-1 rounded-xl border py-2 font-semibold tabular-nums ${
-                            loserLegs === n ? 'border-court bg-court text-chalk' : 'border-ink/20 hover:bg-court/10'
+                            loserLegs === n ? 'border-court bg-court text-chalk' : 'border-black hover:bg-mist'
                           }`}
                         >
                           {setsToWin}-{n}
@@ -384,14 +384,14 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
               </div>
             ) : (
               <div className="space-y-2">
-                <div className="grid grid-cols-[3.5rem_1fr_1fr] items-center gap-2 text-xs text-ink/60">
+                <div className="grid grid-cols-[3.5rem_1fr_1fr] items-center gap-2 text-xs text-muted">
                   <span />
                   <span className="truncate text-center">{name(match.home_player_id)}</span>
                   <span className="truncate text-center">{name(match.away_player_id)}</span>
                 </div>
                 {rows.map((row, i) => (
                   <div key={i} className="grid grid-cols-[3.5rem_1fr_1fr] items-center gap-2">
-                    <span className="text-sm text-ink/60">Set {i + 1}</span>
+                    <span className="text-sm text-muted">Set {i + 1}</span>
                     {(['home', 'away'] as const).map((side) => (
                       <input
                         key={side}
@@ -399,7 +399,7 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
                         pattern="[0-9]*"
                         maxLength={2}
                         aria-label={`Set ${i + 1} — points de ${name(sideId(side))}`}
-                        className="w-full rounded-xl border border-ink/20 px-3 py-2.5 text-center text-base outline-none focus:ring-2 focus:ring-court/40"
+                        className="w-full rounded-xl border border-black px-3 py-2.5 text-center text-base outline-none focus:ring-2 focus:ring-ochre"
                         value={row[side]}
                         onChange={(e) => {
                           const value = e.target.value.replace(/\D/g, '')
@@ -409,12 +409,12 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
                     ))}
                   </div>
                 ))}
-                <p className="text-xs text-ink/60">
+                <p className="text-xs text-muted">
                   {setsToWin} set{setsToWin > 1 ? 's' : ''} gagnant{setsToWin > 1 ? 's' : ''} de 11 points, 2 points
                   d'écart. Laisse vides les sets non joués.
                 </p>
                 {preview && (
-                  <p className={`text-sm ${preview.ok ? 'text-court' : 'text-ink/60'}`}>
+                  <p className={`text-sm ${preview.ok ? 'text-court' : 'text-muted'}`}>
                     {preview.ok ? `✓ Victoire de ${name(sideId(preview.winner))}` : preview.error}
                   </p>
                 )}

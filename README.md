@@ -8,6 +8,9 @@ Site web (mobile et desktop, installable sur téléphone) pour organiser des tou
 - Supabase (base de données, authentification, temps réel)
 - Cloudflare Pages (hébergement, une URL de prévisualisation par branche)
 
+## Design
+Design « Ordre du jeu » (couleurs FFT) : voir [`docs/DESIGN.md`](docs/DESIGN.md), à suivre pour toute modification d'interface.
+
 ## Commandes
 | Commande | Rôle |
 |---|---|

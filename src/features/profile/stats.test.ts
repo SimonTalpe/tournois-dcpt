@@ -80,8 +80,8 @@ describe('parcours dans un tournoi', () => {
       match('t1', 't1-main-2', 'me', 'b', played('me')),
       match('t1', 't1-main-3', 'c', 'me', played('me')),
     ]
-    expect(tournamentFinish(t, rounds, matches, 'me')).toEqual({ label: '🏆 Vainqueur', rank: 1, final: true })
-    expect(tournamentFinish(t, rounds, matches, 'c')).toEqual({ label: '🥈 Finaliste', rank: 2, final: true })
+    expect(tournamentFinish(t, rounds, matches, 'me')).toEqual({ label: 'Vainqueur', rank: 1, final: true })
+    expect(tournamentFinish(t, rounds, matches, 'c')).toEqual({ label: 'Finaliste', rank: 2, final: true })
   })
 
   it('éliminé en quart, en demie, ou 3e/4e avec petite finale', () => {
@@ -98,7 +98,7 @@ describe('parcours dans un tournoi', () => {
     const semis = [match('t2', 't2-main-1', 'me', 'a', played('me')), match('t2', 't2-main-2', 'b', 'me', played('b'))]
     expect(
       tournamentFinish(t, withThird, [...semis, match('t2', 't2-third_place-1', 'me', 'x', played('me'))], 'me'),
-    ).toMatchObject({ label: '🥉 3e', rank: 3 })
+    ).toMatchObject({ label: '3e', rank: 3 })
     expect(
       tournamentFinish(t, withThird, [...semis, match('t2', 't2-third_place-1', 'me', 'x', played('x'))], 'me'),
     ).toMatchObject({ label: '4e', rank: 4 })
@@ -198,7 +198,7 @@ describe('historique et statistiques', () => {
     })
     expect(miniPong.best?.finish.label).toBe('Demi-finaliste')
     expect(darts).toMatchObject({ played: 1, wins: 1, winRate: 100 })
-    expect(darts.best?.finish.label).toBe('🏆 Vainqueur')
+    expect(darts.best?.finish.label).toBe('Vainqueur')
   })
 
   it('aucun match joué : pas de pourcentage', () => {

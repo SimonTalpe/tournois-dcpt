@@ -154,7 +154,7 @@ export function DartsPage() {
   if (!game || !state) {
     return (
       <section className="space-y-5">
-        <h1 className="text-2xl font-bold text-court">🎯 Compteur de fléchettes</h1>
+        <h1 className="font-display text-[56px] leading-[0.9] font-black sm:text-[72px]">Compteur de fléchettes</h1>
         <SetupScreen
           key={setup.ranked ? 'ranked' : 'free'}
           viewer={viewer}

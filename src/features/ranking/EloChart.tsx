@@ -44,7 +44,7 @@ export function EloChart({ points, title }: { points: Point[]; title: string }) 
 
   return (
     <figure className="relative space-y-1">
-      <figcaption id={titleId} className="text-xs text-ink/60">
+      <figcaption id={titleId} className="text-xs text-muted">
         {title}
       </figcaption>
       <svg

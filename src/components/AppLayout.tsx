@@ -3,16 +3,18 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import { NotificationBell } from '../features/announcements/NotificationBell.tsx'
 import { NotificationsProvider } from '../features/announcements/NotificationsProvider.tsx'
 import { isAdmin, isPlayer, useAuth } from '../features/auth/AuthContext.ts'
+import { getInitials } from '../lib/initials.ts'
 import { visibleNavCount } from '../lib/navOverflow.ts'
 import { APP_VERSION } from '../lib/version.ts'
+import { Icon, type IconName } from './ui.tsx'
 
-const NAV_ITEMS = [
-  { to: '/accueil', label: 'Accueil', icon: '🏠', playersOnly: false },
-  { to: '/tournois', label: 'Tournois', icon: '🏆', playersOnly: false },
-  { to: '/classement', label: 'Classement', icon: '🏅', playersOnly: false },
-  { to: '/compteur', label: 'Compteur', icon: '🎯', playersOnly: false },
-  { to: '/profil', label: 'Profil', icon: '👤', playersOnly: true },
-] as const
+const NAV_ITEMS: readonly { to: string; label: string; icon: IconName; playersOnly: boolean }[] = [
+  { to: '/accueil', label: 'Accueil', icon: 'home', playersOnly: false },
+  { to: '/tournois', label: 'Tournois', icon: 'tournaments', playersOnly: false },
+  { to: '/compteur', label: 'Compteur', icon: 'darts', playersOnly: false },
+  { to: '/classement', label: 'Classement', icon: 'ranking', playersOnly: false },
+  { to: '/profil', label: 'Profil', icon: 'profile', playersOnly: true },
+]
 
 type NavItem = (typeof NAV_ITEMS)[number]
 
@@ -33,63 +35,77 @@ function Layout() {
   const navigate = useNavigate()
   const player = isPlayer(auth)
   const items = useMemo(() => NAV_ITEMS.filter((item) => !item.playersOnly || player), [player])
-  const who = auth.demoMode
-    ? 'Maquette'
-    : auth.access === 'spectator'
-      ? '👀 Spectateur'
-      : (auth.profile?.full_name ?? '')
-
-  async function handleSignOut() {
+  const fullName = auth.profile?.full_name ?? ''
+  async function handleSignOut(to = '/') {
     await auth.signOut()
-    navigate('/', { replace: true })
+    navigate(to, { replace: true })
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-10 bg-court text-chalk shadow">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
-          <Link to="/accueil" className="flex shrink-0 items-center gap-2 font-bold">
-            <img src="/favicon.svg" alt="" className="h-8 w-8" />
-            <span className="hidden lg:inline">Mini-pong et fléchettes</span>
-            <span className="lg:hidden">MPF</span>
+    <div className="flex min-h-screen flex-col border-t-8 border-ochre bg-white">
+      <header className="sticky top-0 z-10 border-b-2 border-black bg-white">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
+          <Link to="/accueil" className="flex shrink-0 items-baseline gap-2.5 text-black">
+            <span className="font-display text-[30px] leading-none font-black sm:text-[34px]">MPF</span>
+            <span className="text-sm font-medium max-[359px]:hidden">Mini-pong et fléchettes</span>
           </Link>
           <TopNav items={items} />
-          <div className="flex min-w-0 items-center gap-2 text-sm md:shrink-0">
-            <span className="max-w-[9rem] truncate text-chalk/80 lg:max-w-[14rem]" title={who}>
-              {who}
-            </span>
+          <div className="flex min-w-0 items-center gap-1.5 md:shrink-0">
+            {auth.demoMode && <span className="text-sm text-muted">Maquette</span>}
             {!auth.demoMode && isPlayer(auth) && <NotificationBell />}
             {isAdmin(auth) && (
               <NavLink
                 to="/admin"
                 className={({ isActive }) =>
-                  `shrink-0 rounded-lg px-2 py-1.5 font-medium ${isActive ? 'bg-ball text-court' : 'hover:bg-court-light'}`
+                  `inline-flex min-h-11 shrink-0 items-center gap-1.5 px-3 text-sm font-semibold ${
+                    isActive ? 'bg-ochre-text text-white' : 'bg-black text-white hover:bg-ochre-text'
+                  }`
                 }
                 aria-label="Administration"
               >
-                ⚙️<span className="hidden sm:inline"> Admin</span>
+                <Icon name="settings" className="h-4 w-4" />
+                <span className="hidden sm:inline">Administration</span>
               </NavLink>
             )}
-            {!auth.demoMode && (
-              <button
-                type="button"
-                onClick={handleSignOut}
-                className="shrink-0 rounded-lg border border-chalk/40 px-2 py-1.5 hover:bg-court-light"
+            {player && fullName && (
+              <NavLink
+                to="/profil"
+                aria-label={`Mon profil, ${fullName}`}
+                title={fullName}
+                className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-full bg-black text-sm font-bold text-white md:inline-flex"
               >
-                {auth.access === 'spectator' ? 'Quitter' : 'Déconnexion'}
-              </button>
+                {getInitials(fullName)}
+              </NavLink>
+            )}
+            {!auth.demoMode && auth.access === 'spectator' && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => void handleSignOut('/jouer')}
+                  className="hidden min-h-11 shrink-0 items-center border-2 border-black px-3 text-sm font-semibold hover:bg-black hover:text-white sm:inline-flex"
+                >
+                  Se connecter pour jouer
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleSignOut()}
+                  className="min-h-11 shrink-0 px-2 text-sm font-medium underline underline-offset-4"
+                >
+                  Quitter
+                </button>
+              </>
             )}
           </div>
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 pt-6 pb-24 md:pb-8">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-28 sm:px-6 md:pb-10">
         <Outlet />
-        <p className="pt-10 text-center text-[11px] text-ink/40">Version du {APP_VERSION}</p>
+        <p className="pt-10 text-center text-[11px] text-muted">Version du {APP_VERSION}</p>
       </main>
 
       <nav
-        className={`fixed inset-x-0 bottom-0 z-10 grid border-t border-court/20 bg-white pb-[env(safe-area-inset-bottom)] md:hidden ${
+        className={`fixed inset-x-0 bottom-0 z-10 grid border-t-2 border-black bg-white px-0.5 pt-1 pb-[max(10px,env(safe-area-inset-bottom))] md:hidden ${
           items.length === 6 ? 'grid-cols-6' : items.length === 5 ? 'grid-cols-5' : items.length === 4 ? 'grid-cols-4' : 'grid-cols-3'
         }`}
         aria-label="Menu principal"
@@ -99,14 +115,12 @@ function Layout() {
             key={item.to}
             to={item.to}
             className={({ isActive }) =>
-              `flex min-w-0 flex-col items-center gap-0.5 px-0 py-2 text-[10px] tracking-tighter min-[360px]:px-0.5 min-[360px]:tracking-tight min-[400px]:text-[11px] sm:text-xs sm:tracking-normal ${
-                isActive ? 'text-court min-[360px]:font-semibold' : 'text-ink/60'
+              `flex min-h-[52px] min-w-0 flex-col items-center justify-center gap-[3px] text-[11px] tracking-tight ${
+                isActive ? 'font-bold text-ochre-text' : 'font-medium text-black'
               }`
             }
           >
-            <span aria-hidden="true" className="text-lg">
-              {item.icon}
-            </span>
+            <Icon name={item.icon} />
             <span className="max-w-full truncate">{item.label}</span>
           </NavLink>
         ))}
@@ -165,7 +179,7 @@ function TopNav({ items }: { items: readonly NavItem[] }) {
   const shown = items.slice(0, visible)
   const hidden = items.slice(visible)
   const hiddenActive = hidden.some((item) => pathname === item.to || pathname.startsWith(`${item.to}/`))
-  const linkClass = 'whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition'
+  const linkClass = 'inline-flex min-h-11 items-center whitespace-nowrap px-3 text-[15px] font-medium text-black'
 
   return (
     <nav className="relative hidden min-w-0 flex-1 md:block" aria-label="Menu principal">
@@ -188,7 +202,9 @@ function TopNav({ items }: { items: readonly NavItem[] }) {
           <NavLink
             key={item.to}
             to={item.to}
-            className={({ isActive }) => `${linkClass} ${isActive ? 'bg-ball text-court' : 'hover:bg-court-light'}`}
+            className={({ isActive }) =>
+              `${linkClass} ${isActive ? 'underline decoration-ochre decoration-[3px] underline-offset-8' : 'hover:underline hover:underline-offset-8'}`
+            }
           >
             {item.label}
           </NavLink>
@@ -200,22 +216,22 @@ function TopNav({ items }: { items: readonly NavItem[] }) {
               onClick={() => setOpen((value) => !value)}
               aria-expanded={open}
               aria-haspopup="true"
-              className={`${linkClass} ${hiddenActive ? 'bg-ball text-court' : 'hover:bg-court-light'}`}
+              className={`${linkClass} ${hiddenActive ? 'underline decoration-ochre decoration-[3px] underline-offset-8' : ''}`}
             >
               Plus ▾
             </button>
             {open && (
-              <div className="absolute top-full left-0 z-20 mt-1 min-w-[11rem] overflow-hidden rounded-lg bg-white py-1 text-ink shadow-lg ring-1 ring-court/20">
+              <div className="absolute top-full left-0 z-20 mt-1 min-w-[11rem] border-2 border-black bg-white py-1 text-black">
                 {hidden.map((item) => (
                   <NavLink
                     key={item.to}
                     to={item.to}
                     onClick={() => setOpen(false)}
                     className={({ isActive }) =>
-                      `flex items-center gap-2 px-4 py-2 text-sm ${isActive ? 'bg-ball/40 font-semibold text-court' : 'hover:bg-chalk'}`
+                      `flex min-h-11 items-center gap-2 px-4 text-[15px] ${isActive ? 'bg-ochre-tint font-semibold text-ochre-text' : 'hover:bg-mist'}`
                     }
                   >
-                    <span aria-hidden="true">{item.icon}</span>
+                    <Icon name={item.icon} className="h-[18px] w-[18px]" />
                     {item.label}
                   </NavLink>
                 ))}

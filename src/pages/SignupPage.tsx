@@ -113,7 +113,7 @@ export function SignupPage() {
       </form>
       <p className="text-center text-sm">
         Déjà un compte ?{' '}
-        <Link to="/jouer" className="font-semibold text-court underline">
+        <Link to="/jouer" className="font-semibold text-ochre-text underline">
           Se connecter
         </Link>
       </p>

@@ -82,16 +82,16 @@ export function PeoplePicker({ excludedPlayerIds, actionLabel, onPick, confirmPi
         type="search"
         aria-label="Rechercher un joueur"
         placeholder="Rechercher ou saisir un nom…"
-        className="w-full rounded-xl border border-ink/20 px-3 py-2.5 text-base outline-none focus:ring-2 focus:ring-court/40"
+        className="w-full rounded-xl border border-black px-3 py-2.5 text-base outline-none focus:ring-2 focus:ring-ochre"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
       />
-      <ul className="max-h-64 divide-y divide-ink/10 overflow-y-auto rounded-xl border border-ink/10">
+      <ul className="max-h-64 divide-y divide-black overflow-y-auto rounded-xl border border-black">
         {shown.map((c) => (
           <li key={c.key} className="flex items-center justify-between gap-2 px-3 py-2">
             <span className="min-w-0 truncate text-sm">
               {c.label}
-              {c.kind === 'name_only' && <span className="ml-2 rounded bg-ink/10 px-1.5 text-xs">nom seul</span>}
+              {c.kind === 'name_only' && <span className="ml-2 rounded bg-mist px-1.5 text-xs">nom seul</span>}
             </span>
             <SecondaryButton
               disabled={busy}
@@ -101,7 +101,7 @@ export function PeoplePicker({ excludedPlayerIds, actionLabel, onPick, confirmPi
             </SecondaryButton>
           </li>
         ))}
-        {shown.length === 0 && <li className="px-3 py-2 text-sm text-ink/60">Aucun joueur trouvé.</li>}
+        {shown.length === 0 && <li className="px-3 py-2 text-sm text-muted">Aucun joueur trouvé.</li>}
       </ul>
       {query.trim().length >= 2 && !exactExists && (
         <SecondaryButton disabled={busy} onClick={() => pick(query.trim(), () => createNameOnlyPlayer(query))}>

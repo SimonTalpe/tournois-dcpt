@@ -30,7 +30,11 @@ export default defineConfig({
       injectRegister: false,
       // Une fois activée (après « Recharger »), la nouvelle version prend aussi la main sur les pages
       // ouvertes sans service worker (ex. après un rechargement forcé).
-      workbox: { clientsClaim: true },
+      workbox: {
+        clientsClaim: true,
+        // Polices du design (alphabet latin) gardées en cache pour l'appli installée.
+        globPatterns: ['**/*.{js,css,html,svg,png}', '**/*-latin-wght-normal-*.woff2'],
+      },
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'Mini-pong et fléchettes',
@@ -39,8 +43,8 @@ export default defineConfig({
         lang: 'fr',
         start_url: '/',
         display: 'standalone',
-        background_color: '#f5f1e6',
-        theme_color: '#1f5135',
+        background_color: '#ffffff',
+        theme_color: '#c4511e',
         icons: [
           { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
           { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },

@@ -1,6 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import type { Match, Tournament, TournamentBundle } from '../tournaments/types.ts'
-import { myTournamentsInProgress, myUpcomingMatches, progress, recentResults } from './home.ts'
+import {
+  dayTitle,
+  daySchedule,
+  frenchTime,
+  myTournamentsInProgress,
+  myUpcomingMatches,
+  programDay,
+  progress,
+  recentResults,
+  relativeSchedule,
+  unscheduledMatches,
+} from './home.ts'
 
 const tournament = (id: string, name: string, status: Tournament['status'] = 'in_progress'): Tournament => ({
   id,
@@ -155,4 +166,41 @@ describe('page d’accueil', () => {
   it('calcule l’avancement d’un tournoi', () => {
     expect(progress(bundles[0])).toEqual({ done: 1, total: 3 })
   })
+
+  it('donne le programme d’une journée, trié par heure, avec mes matchs repérés', () => {
+    const scheduled: Match[] = [
+      { ...t1Matches[0], scheduled_at: '2026-12-03T11:45:00Z', location_id: 'l2' },
+      { ...t1Matches[1], scheduled_at: '2026-12-03T11:15:00Z' },
+      t1Matches[2],
+    ]
+    const day = daySchedule([bundle(t1, scheduled), bundle(t2, t2Matches)], 'profile-me', '2026-12-03')
+    expect(day.map((i) => [i.time, i.home, i.away, i.isMine])).toEqual([
+      ['12:00', 'DAN', 'ME', true],
+      ['12:15', 'CARL', 'DAN', false],
+      ['12:45', 'ME', 'BOB', true],
+    ])
+    expect(day[2].locationName).toBe('2e étage')
+    expect(daySchedule(bundles, 'profile-me', '2026-12-04')).toEqual([])
+  })
+
+  it('choisit aujourd’hui s’il y a des matchs, sinon le prochain jour programmé', () => {
+    expect(programDay(bundles, '2026-12-03')).toBe('2026-12-03')
+    expect(programDay(bundles, '2026-12-01')).toBe('2026-12-03')
+    expect(programDay(bundles, '2026-12-04')).toBeNull()
+  })
+
+  it('compte les matchs à jouer sans horaire', () => {
+    // a1 (joueurs connus, sans horaire) ; a3 et b3 attendent un joueur ; b1 a un horaire.
+    expect(unscheduledMatches(bundles)).toBe(1)
+  })
+
+  it('met en forme les dates et heures de l’accueil', () => {
+    expect(dayTitle('2026-11-23')).toEqual({ weekday: 'Lundi', dayMonth: '23 novembre' })
+    expect(frenchTime('09:05')).toBe('9 h 05')
+    expect(relativeSchedule('2026-11-23T11:45:00Z', '2026-11-23')).toBe('Aujourd’hui, 12 h 45')
+    expect(relativeSchedule('2026-11-24T11:45:00Z', '2026-11-23')).toBe('Demain, 12 h 45')
+    expect(relativeSchedule('2026-11-26T12:15:00Z', '2026-11-23')).toBe('Jeudi, 13 h 15')
+    expect(relativeSchedule('2026-12-03T12:15:00Z', '2026-11-23')).toBe('Jeudi 3 décembre, 13 h 15')
+  })
 })
+

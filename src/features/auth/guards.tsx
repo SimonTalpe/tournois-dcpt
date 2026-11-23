@@ -4,7 +4,7 @@ import { canViewSite, isAdmin, isPlayer, useAuth } from './AuthContext.ts'
 
 export function LoadingScreen() {
   return (
-    <div className="flex min-h-[50vh] items-center justify-center text-ink/60" role="status">
+    <div className="flex min-h-[50vh] items-center justify-center text-muted" role="status">
       Chargement…
     </div>
   )

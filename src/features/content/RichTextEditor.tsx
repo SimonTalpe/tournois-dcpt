@@ -49,7 +49,7 @@ export function RichTextEditor({ initialValue, onChange, id, placeholder }: Prop
   })
 
   return (
-    <div className="overflow-hidden rounded-xl border border-ink/20 bg-white focus-within:ring-2 focus-within:ring-court/40">
+    <div className="overflow-hidden rounded-xl border border-black bg-white focus-within:ring-2 focus-within:ring-ochre">
       {editor && <Toolbar editor={editor} />}
       <EditorContent editor={editor} />
     </div>
@@ -89,7 +89,7 @@ function Toolbar({ editor }: { editor: Editor }) {
   }
 
   return (
-    <div className="flex flex-wrap gap-1 border-b border-ink/10 bg-chalk/60 p-1" role="toolbar" aria-label="Mise en forme">
+    <div className="flex flex-wrap gap-1 border-b border-black bg-chalk/60 p-1" role="toolbar" aria-label="Mise en forme">
       <ToolButton label="Gras" active={state.bold} onClick={() => editor.chain().focus().toggleBold().run()}>
         <strong>G</strong>
       </ToolButton>
@@ -112,7 +112,7 @@ function Toolbar({ editor }: { editor: Editor }) {
         1.
       </ToolButton>
       <ToolButton label={state.link ? 'Retirer le lien' : 'Lien'} active={state.link} onClick={toggleLink}>
-        🔗
+        Lien
       </ToolButton>
       <span className="ml-auto flex gap-1">
         <ToolButton label="Annuler" disabled={!state.canUndo} onClick={() => editor.chain().focus().undo().run()}>
@@ -150,7 +150,7 @@ function ToolButton({
       onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
       className={`min-h-9 min-w-9 rounded-lg px-2 text-sm transition disabled:opacity-30 ${
-        active ? 'bg-court text-chalk' : 'text-court hover:bg-court/10'
+        active ? 'bg-court text-chalk' : 'text-court hover:bg-mist'
       }`}
     >
       {children}

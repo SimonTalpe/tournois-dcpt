@@ -142,10 +142,6 @@ export const DISCIPLINE_LABELS: Record<Discipline, string> = {
   darts: 'Fléchettes',
 }
 
-export const DISCIPLINE_ICONS: Record<Discipline, string> = {
-  mini_pong: '🏓',
-  darts: '🎯',
-}
 
 export const STATUS_LABELS: Record<TournamentStatus, string> = {
   draft: 'Brouillon',

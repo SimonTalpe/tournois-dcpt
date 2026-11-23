@@ -70,7 +70,7 @@ export function AnnouncementsPage() {
   if (auth.demoMode) {
     return (
       <section className="space-y-4">
-        <h1 className="text-2xl font-bold text-court">Annonces</h1>
+        <h1 className="font-display text-[56px] leading-[0.9] font-black sm:text-[72px]">Annonces</h1>
         <DemoModeNotice />
       </section>
     )
@@ -93,10 +93,10 @@ export function AnnouncementsPage() {
     }
   }
 
-  const renderCard = (a: Announcement, badge?: string) =>
+  const renderCard = (a: Announcement, badge?: string, featured = false) =>
     editing === a.id ? (
-      <section key={a.id} className="space-y-3 rounded-2xl bg-white p-4 shadow-sm">
-        <h2 className="text-lg font-bold text-court">Modifier l’annonce</h2>
+      <section key={a.id} className="space-y-3 rounded-2xl bg-white p-4 border-2 border-black">
+        <h2 className="font-display text-[30px] leading-none font-extrabold">Modifier l’annonce</h2>
         <AnnouncementForm
           initial={a}
           submitLabel="Enregistrer"
@@ -113,7 +113,8 @@ export function AnnouncementsPage() {
         key={a.id}
         announcement={a}
         highlighted={a.id === targetId}
-        badge={badge ? <span className="rounded-full bg-ball/40 px-2 py-0.5 text-ink">{badge}</span> : undefined}
+        featured={featured}
+        badge={badge ? <span className="border border-black bg-white px-2 py-0.5 font-semibold text-black">{badge}</span> : undefined}
         actions={
           admin ? (
             <>
@@ -130,19 +131,19 @@ export function AnnouncementsPage() {
   return (
     <section className="space-y-5">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-court">Annonces</h1>
+        <h1 className="font-display text-[56px] leading-[0.9] font-black sm:text-[72px]">Annonces</h1>
         {admin && editing !== 'new' && (
           <div className="w-auto">
             <PrimaryButton type="button" onClick={() => setEditing('new')}>
-              + Nouvelle
+              Publier une annonce
             </PrimaryButton>
           </div>
         )}
       </div>
 
       {editing === 'new' && (
-        <section className="space-y-3 rounded-2xl bg-white p-4 shadow-sm">
-          <h2 className="text-lg font-bold text-court">Nouvelle annonce</h2>
+        <section className="space-y-3 border-2 border-black bg-mist p-5">
+          <h2 className="font-display text-[30px] leading-none font-extrabold">Nouvelle annonce</h2>
           <AnnouncementForm
             submitLabel="Publier"
             onCancel={() => setEditing(null)}
@@ -157,26 +158,26 @@ export function AnnouncementsPage() {
 
       {error && <Notice tone="error">{error}</Notice>}
       {!announcements ? (
-        <p className="text-ink/60">Chargement…</p>
+        <p className="text-muted">Chargement…</p>
       ) : (
         <>
           {admin && scheduled.length > 0 && (
             <section className="space-y-2">
-              <h2 className="text-sm font-semibold tracking-wide text-ink/60 uppercase">Programmées (visibles par toi seul)</h2>
+              <h2 className="text-[15px] font-bold">Programmées (visibles par toi seul)</h2>
               <div className="space-y-3">{scheduled.map((a) => renderCard(a, 'Programmée'))}</div>
             </section>
           )}
           {live.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-court/30 bg-white p-6 text-ink/70">
-              Aucune annonce pour le moment.{admin ? ' Publie la première avec « + Nouvelle ».' : ''}
+            <div className="border-2 border-dashed border-black p-6 text-[17px]">
+              Aucune annonce pour le moment.{admin ? ' Publie la première avec « Publier une annonce ».' : ''}
             </div>
           ) : (
-            <div className="space-y-3">{live.map((a) => renderCard(a))}</div>
+            <div className="space-y-4">{live.map((a, i) => renderCard(a, undefined, i === 0))}</div>
           )}
           {admin && expired.length > 0 && (
             <section className="space-y-2">
-              <button type="button" className="text-sm text-ink/60 underline" onClick={() => setShowPast((v) => !v)}>
-                {showPast ? 'Masquer' : 'Afficher'} les annonces expirées ({expired.length})
+              <button type="button" className="min-h-11 text-[15px] font-semibold text-ochre-text underline" onClick={() => setShowPast((v) => !v)}>
+                {showPast ? 'Masquer les annonces passées' : `Annonces passées (${expired.length})`}
               </button>
               {showPast && <div className="space-y-3 opacity-80">{expired.map((a) => renderCard(a, 'Expirée'))}</div>}
             </section>

@@ -1,13 +1,51 @@
 @import 'tailwindcss';
+/* Polices hébergées avec le site (pas d'appel à Google Fonts, fonctionne hors ligne dans l'appli). */
+@import '@fontsource-variable/big-shoulders-display';
+@import '@fontsource-variable/schibsted-grotesk';
 
-/* Palette provisoire « court de tennis / pause » — le design sera retravaillé après les fonctionnalités. */
+/*
+ * Design « Ordre du jeu » (validé le 23/11/2026) — référence : docs/DESIGN.md.
+ * Les anciens noms de couleurs (court, clay, ball, chalk, ink) sont conservés comme alias
+ * pour que tout le site bascule d'un coup ; le nouveau code utilise les noms explicites.
+ */
 @theme {
-  --color-court: #1f5135;
-  --color-court-light: #2e6f4a;
-  --color-clay: #c4622d;
-  --color-ball: #d9ef3c;
-  --color-chalk: #f5f1e6;
-  --color-ink: #1d2420;
+  /* Couleurs FFT */
+  --color-ochre: #c4511e; /* aplats (ocre terre battue) */
+  --color-ochre-text: #b4471a; /* texte et liens ocre sur fond blanc */
+  --color-ochre-tint: #fff1e9; /* surlignage léger (ta ligne, option recommandée) */
+  --color-ochre-light: #ffb38f; /* ocre lisible sur fond noir */
+  --color-mist: #f1f1f1; /* zones admin et secondaires */
+  --color-muted: #4d4d4d; /* texte secondaire */
+
+  /* Alias historiques */
+  --color-court: #000000;
+  --color-court-light: #b4471a;
+  --color-clay: #b4471a;
+  --color-ball: #c4511e;
+  --color-chalk: #ffffff;
+  --color-ink: #000000;
+
+  /* Typographies */
+  --font-sans: 'Schibsted Grotesk Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Big Shoulders Display Variable', 'Arial Narrow', sans-serif;
+
+  /* Angles droits partout (sauf rounded-full : pastilles) */
+  --radius-xs: 0;
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --radius-2xl: 0;
+  --radius-3xl: 0;
+  --radius-4xl: 0;
+
+  /* Pas d'ombres décoratives */
+  --shadow-2xs: 0 0 #0000;
+  --shadow-xs: 0 0 #0000;
+  --shadow-sm: 0 0 #0000;
+  --shadow-md: 0 0 #0000;
+  --shadow-lg: 0 0 0 2px #000000;
+  --shadow-xl: 0 0 0 2px #000000;
 }
 
 html,
@@ -16,10 +54,16 @@ body,
   min-height: 100%;
 }
 
+/* Focus visible ocre sur tout élément interactif. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--color-ochre);
+  outline-offset: 2px;
+}
+
 body {
   background-color: var(--color-chalk);
   color: var(--color-ink);
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-sans);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -52,18 +96,27 @@ body {
   margin: 0;
 }
 .rich-text a {
-  color: var(--color-court);
+  color: var(--color-ochre-text);
   text-decoration: underline;
   word-break: break-word;
 }
 .rich-text blockquote {
-  border-left: 3px solid var(--color-ball);
+  border-left: 4px solid var(--color-ochre);
   padding-left: 0.8em;
   color: color-mix(in srgb, var(--color-ink) 75%, transparent);
 }
 .rich-text hr {
   border-color: color-mix(in srgb, var(--color-ink) 15%, transparent);
 }
+/* Annonce à la une (fond ocre) : liens et citations en blanc. */
+.announcement-featured .rich-text a {
+  color: #ffffff;
+}
+.announcement-featured .rich-text blockquote {
+  border-left-color: #ffffff;
+  color: #ffffff;
+}
+
 /* Éditeur vide : texte d'aide. */
 .rich-text.ProseMirror p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
@@ -71,4 +124,48 @@ body {
   height: 0;
   pointer-events: none;
   color: color-mix(in srgb, var(--color-ink) 40%, transparent);
+}
+
+/*
+ * Compteur de fléchettes : fond noir pendant la partie (décision de design du 23/11/2026).
+ * Les composants gardent leurs classes claires ; cette zone les inverse.
+ */
+.counter-dark .bg-white,
+.counter-dark .bg-chalk {
+  background-color: #000000;
+}
+.counter-dark .bg-mist,
+.counter-dark .bg-ochre-tint {
+  background-color: #1f1f1f;
+}
+.counter-dark .bg-court {
+  background-color: var(--color-ochre);
+}
+.counter-dark .border-black,
+.counter-dark .border-court {
+  border-color: #ffffff;
+}
+.counter-dark .text-court,
+.counter-dark .text-ink,
+.counter-dark .text-black {
+  color: #ffffff;
+}
+.counter-dark .text-muted {
+  color: #bdbdbd;
+}
+.counter-dark .text-clay,
+.counter-dark .text-ochre-text {
+  color: var(--color-ochre-light);
+}
+/* Les fenêtres ouvertes depuis le compteur restent claires. */
+.counter-dark [role='dialog'] .bg-white {
+  background-color: #ffffff;
+}
+.counter-dark [role='dialog'] .text-black,
+.counter-dark [role='dialog'] .text-court,
+.counter-dark [role='dialog'] .text-ink {
+  color: #000000;
+}
+.counter-dark [role='dialog'] .border-black {
+  border-color: #000000;
 }

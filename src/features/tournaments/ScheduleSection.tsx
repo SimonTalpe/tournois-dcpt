@@ -48,16 +48,16 @@ export function ScheduleSection({ match, locations, canEdit, onSaved }: Props) {
   const summary =
     match.scheduled_at || locationName ? (
       <p className="text-sm">
-        {match.scheduled_at && <span className="font-semibold">🕒 {formatSchedule(match.scheduled_at)}</span>}
+        {match.scheduled_at && <span className="font-semibold">{formatSchedule(match.scheduled_at)}</span>}
         {match.scheduled_at && locationName && ' · '}
-        {locationName && <span className="font-semibold">📍 {locationName}</span>}
+        {locationName && <span className="font-semibold">{locationName}</span>}
       </p>
     ) : (
-      <p className="text-sm text-ink/60">Lieu et horaire pas encore fixés.</p>
+      <p className="text-sm text-muted">Lieu et horaire pas encore fixés.</p>
     )
 
   return (
-    <div className="space-y-2 border-t border-ink/10 pt-4">
+    <div className="space-y-2 border-t border-black pt-4">
       <div className="flex items-center justify-between gap-2">
         <h3 className="font-semibold">Lieu et horaire</h3>
         {canEdit && !editing && (
@@ -67,13 +67,13 @@ export function ScheduleSection({ match, locations, canEdit, onSaved }: Props) {
       {summary}
       {editing && (
         <div className="space-y-2 rounded-xl bg-chalk p-3">
-          <p className="text-xs text-ink/60">Du lundi au vendredi, par tranches de 15 minutes. Ton adversaire peut aussi modifier.</p>
+          <p className="text-xs text-muted">Du lundi au vendredi, par tranches de 15 minutes. Ton adversaire peut aussi modifier.</p>
           <div className="grid grid-cols-2 gap-2">
             <label className="space-y-1 text-sm">
               <span className="block font-medium">Jour</span>
               <input
                 type="date"
-                className="w-full rounded-xl border border-ink/20 bg-white px-3 py-2.5 text-base"
+                className="w-full rounded-xl border border-black bg-white px-3 py-2.5 text-base"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
               />
@@ -81,7 +81,7 @@ export function ScheduleSection({ match, locations, canEdit, onSaved }: Props) {
             <label className="space-y-1 text-sm">
               <span className="block font-medium">Heure</span>
               <select
-                className="w-full rounded-xl border border-ink/20 bg-white px-3 py-2.5 text-base"
+                className="w-full rounded-xl border border-black bg-white px-3 py-2.5 text-base"
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
               >
@@ -97,7 +97,7 @@ export function ScheduleSection({ match, locations, canEdit, onSaved }: Props) {
           <label className="block space-y-1 text-sm">
             <span className="block font-medium">Lieu</span>
             <select
-              className="w-full rounded-xl border border-ink/20 bg-white px-3 py-2.5 text-base"
+              className="w-full rounded-xl border border-black bg-white px-3 py-2.5 text-base"
               value={locationId}
               onChange={(e) => setLocationId(e.target.value)}
             >
