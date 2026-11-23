@@ -17,6 +17,8 @@ import { DISCIPLINE_ICONS, DISCIPLINE_LABELS, STATUS_LABELS, type Discipline } f
 import { loadPlayerHistory } from './api.ts'
 import { disciplineStats, playerHistory, type HistoryMatch, type TournamentHistory } from './stats.ts'
 
+type EloChange = { delta: number; after: number }
+
 type EloCard = {
   discipline: Discipline
   rows: EloHistoryRow[]
@@ -29,8 +31,8 @@ type Ready = {
   status: 'ready'
   history: TournamentHistory[]
   elo: EloCard[]
-  /** Écart d'Elo du joueur par match (tournoi ou classé). */
-  deltas: Map<string, number>
+  /** Écart d'Elo du joueur et Elo après le match, par match (tournoi ou classé). */
+  deltas: Map<string, EloChange>
   ranked: RankedMatch[]
 }
 type State = { status: 'loading' } | { status: 'error'; message: string } | Ready
@@ -44,12 +46,12 @@ async function loadAll(playerId: string): Promise<Ready> {
     listPlayerRankedMatches(playerId),
     ...DISCIPLINES.map((d) => loadEloHistory(d)),
   ])
-  const deltas = new Map<string, number>()
+  const deltas = new Map<string, EloChange>()
   const elo: EloCard[] = []
   DISCIPLINES.forEach((discipline, i) => {
     const all = boards[i]
     const rows = all.filter((r) => r.player_id === playerId)
-    for (const r of rows) deltas.set(r.match_id, r.delta)
+    for (const r of rows) deltas.set(r.match_id, { delta: r.delta, after: r.rating_after })
     if (rows.length === 0) return
     const board = buildLeaderboard(all)
     elo.push({
@@ -159,7 +161,7 @@ export function PlayerStatsView({ playerId }: { playerId: string }) {
           <ul className="divide-y divide-ink/5 overflow-hidden rounded-2xl bg-white shadow-sm">
             {ranked.map((m) => (
               <li key={m.id}>
-                <RankedLine match={m} playerId={playerId} delta={deltas.get(m.id) ?? null} />
+                <RankedLine match={m} playerId={playerId} change={deltas.get(m.id) ?? null} />
               </li>
             ))}
           </ul>
@@ -190,7 +192,7 @@ export function PlayerStatsView({ playerId }: { playerId: string }) {
                       .filter((m) => m.outcome !== 'bye')
                       .map((m) => (
                         <li key={m.match.id}>
-                          <MatchLine item={m} tournamentId={h.tournament.id} eloDelta={deltas.get(m.match.id) ?? null} />
+                          <MatchLine item={m} tournamentId={h.tournament.id} eloChange={deltas.get(m.match.id) ?? null} />
                         </li>
                       ))}
                   </ul>
@@ -242,19 +244,18 @@ function EloCardView({ card }: { card: EloCard }) {
   )
 }
 
-function DeltaBadge({ delta }: { delta: number | null }) {
-  if (delta === null) return null
+/** Écart d'Elo du match et Elo après le match. */
+function DeltaBadge({ change }: { change: EloChange | null }) {
+  if (change === null) return null
   return (
-    <span
-      className={`shrink-0 text-xs font-semibold tabular-nums ${delta >= 0 ? 'text-court' : 'text-clay'}`}
-      title="Écart d’Elo"
-    >
-      {formatDelta(delta)}
+    <span className="shrink-0 text-right text-xs leading-tight tabular-nums" title="Écart d’Elo · Elo après le match">
+      <span className={`block font-semibold ${change.delta >= 0 ? 'text-court' : 'text-clay'}`}>{formatDelta(change.delta)}</span>
+      <span className="block text-[10px] text-ink/50">{change.after}</span>
     </span>
   )
 }
 
-function RankedLine({ match, playerId, delta }: { match: RankedMatch; playerId: string; delta: number | null }) {
+function RankedLine({ match, playerId, change }: { match: RankedMatch; playerId: string; change: EloChange | null }) {
   const won = match.winner_player_id === playerId
   const opponent = match.home_player_id === playerId ? match.away : match.home
   const score = rankedScoreLabel(match, playerId)
@@ -281,7 +282,7 @@ function RankedLine({ match, playerId, delta }: { match: RankedMatch; playerId: 
         </span>
       </span>
       {score && <span className="shrink-0 text-xs text-ink/60 tabular-nums">{score}</span>}
-      <DeltaBadge delta={delta} />
+      <DeltaBadge change={change} />
     </Link>
   )
 }
@@ -305,7 +306,7 @@ const OUTCOME: Record<HistoryMatch['outcome'], { label: string; className: strin
   cancelled: { label: '×', className: 'bg-ink/10 text-ink/60' },
 }
 
-function MatchLine({ item, tournamentId, eloDelta }: { item: HistoryMatch; tournamentId: string; eloDelta: number | null }) {
+function MatchLine({ item, tournamentId, eloChange }: { item: HistoryMatch; tournamentId: string; eloChange: EloChange | null }) {
   const badge = OUTCOME[item.outcome]
   const detail =
     item.outcome === 'walkover_win'
@@ -335,7 +336,7 @@ function MatchLine({ item, tournamentId, eloDelta }: { item: HistoryMatch; tourn
         <span className="block truncate text-xs text-ink/50">{item.roundLabel}</span>
       </span>
       {detail && <span className="shrink-0 text-xs text-ink/60 tabular-nums">{detail}</span>}
-      <DeltaBadge delta={eloDelta} />
+      <DeltaBadge change={eloChange} />
     </Link>
   )
 }
