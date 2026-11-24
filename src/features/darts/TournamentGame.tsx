@@ -69,10 +69,10 @@ export function TournamentGame({ game, onChange, onLeave }: Props) {
 
   const banner = (
     <div className="rounded-2xl bg-court px-4 py-2.5 text-chalk">
-      <p className="truncate text-xs text-chalk/70">
-        🏆 {context.tournamentName} · {context.label}
+      <p className="truncate text-xs text-white">
+        {context.tournamentName} · {context.label}
       </p>
-      <p className="truncate text-xs text-chalk/70">
+      <p className="truncate text-xs text-white">
         {format}
         {context.kind === 'match' && context.legsToWin > 1 && ` · ${context.legsToWin} manches gagnantes`}
       </p>
@@ -119,15 +119,15 @@ export function TournamentGame({ game, onChange, onLeave }: Props) {
     return (
       <section className="space-y-4">
         {banner}
-        <div className="space-y-2 rounded-2xl bg-white p-5 text-center shadow-sm">
-          <p className="text-sm text-ink/60">Manche {legNumber}</p>
-          <p className="text-2xl font-bold text-court">🎯 {legWinnerName} gagne la manche</p>
-          <p className="text-sm text-ink/70">Manche suivante : {nextFirst} commence.</p>
+        <div className="space-y-2 rounded-2xl bg-white p-5 text-center border-2 border-black">
+          <p className="text-sm text-muted">Manche {legNumber}</p>
+          <p className="text-2xl font-bold text-court">{legWinnerName} gagne la manche</p>
+          <p className="text-sm text-muted">Manche suivante : {nextFirst} commence.</p>
         </div>
         <PrimaryButton type="button" onClick={() => onChange(startNextLeg(game))}>
           ▶ Manche suivante
         </PrimaryButton>
-        <button type="button" onClick={undo} className="w-full py-2 text-sm text-ink/60 underline">
+        <button type="button" onClick={undo} className="w-full py-2 text-sm text-muted underline">
           ↶ Erreur de saisie : revenir à la manche
         </button>
       </section>
@@ -141,21 +141,21 @@ export function TournamentGame({ game, onChange, onLeave }: Props) {
     <section className="space-y-5">
       {banner}
       <div>
-        <h1 className="text-2xl font-bold text-court">
-          {context.kind === 'match' ? `🏁 Victoire de ${name(progress.winner)}` : '🏁 Départage terminé'}
+        <h1 className="font-display text-[56px] leading-[0.9] font-black sm:text-[72px]">
+          {context.kind === 'match' ? `Victoire de ${name(progress.winner)}` : 'Départage terminé'}
         </h1>
-        <p className="text-sm text-ink/60">Vérifie le résultat avant de le valider : il sera reporté dans le tournoi.</p>
+        <p className="text-sm text-muted">Vérifie le résultat avant de le valider : il sera reporté dans le tournoi.</p>
       </div>
 
       {context.kind === 'match' ? (
         <div className="space-y-2">
           {legs.length > 1 && (
-            <ol className="divide-y divide-ink/10 rounded-2xl bg-white text-sm shadow-sm">
+            <ol className="divide-y divide-black rounded-2xl bg-white text-sm border-2 border-black">
               {summary.lines.map((line) => {
                 const loser = context.players.find((p) => p.playerId !== line.winner)
                 return (
                   <li key={line.number} className="flex justify-between gap-3 px-4 py-2">
-                    <span className="text-ink/60">Manche {line.number}</span>
+                    <span className="text-muted">Manche {line.number}</span>
                     <span className="truncate">
                       <span className="font-semibold">{name(line.winner)}</span>
                       {loser && ` · ${loser.name} reste ${line.remaining.get(loser.playerId)}`}
@@ -165,14 +165,14 @@ export function TournamentGame({ game, onChange, onLeave }: Props) {
               })}
             </ol>
           )}
-          <ul className="divide-y divide-ink/10 rounded-2xl bg-white shadow-sm">
+          <ul className="divide-y divide-black rounded-2xl bg-white border-2 border-black">
             {context.players.map((p) => {
               const totals = summary.totals.find((t) => t.playerId === p.playerId)
               const isWinner = p.playerId === progress.winner
               return (
                 <li key={p.playerId} className="flex items-center gap-3 px-4 py-3">
                   <span className={`min-w-0 flex-1 truncate ${isWinner ? 'font-bold text-court' : ''}`}>{p.name}</span>
-                  <span className="text-xs text-ink/60">
+                  <span className="text-xs text-muted">
                     {totals?.darts ?? 0} fléchettes{totals?.average != null && ` · moy. ${totals.average}`}
                   </span>
                   <span className="w-6 text-right text-xl font-bold tabular-nums">{progress.legsWon.get(p.playerId) ?? 0}</span>
@@ -182,14 +182,14 @@ export function TournamentGame({ game, onChange, onLeave }: Props) {
           </ul>
         </div>
       ) : (
-        <ol className="divide-y divide-ink/10 rounded-2xl bg-white shadow-sm">
+        <ol className="divide-y divide-black rounded-2xl bg-white border-2 border-black">
           {[...legs[0].players]
             .sort((a, b) => a.rank - b.rank)
             .map((p) => (
               <li key={p.player_id} className="flex items-center gap-3 px-4 py-3">
                 <span className="w-9 shrink-0 text-center text-xl font-bold">{medal(p.rank)}</span>
                 <span className="min-w-0 flex-1 truncate font-semibold">{name(p.player_id)}</span>
-                <span className="text-xs text-ink/60">{p.remaining === 0 ? 'a fini' : `reste ${p.remaining}`}</span>
+                <span className="text-xs text-muted">{p.remaining === 0 ? 'a fini' : `reste ${p.remaining}`}</span>
               </li>
             ))}
         </ol>
@@ -197,7 +197,7 @@ export function TournamentGame({ game, onChange, onLeave }: Props) {
 
       {game.recorded ? (
         <>
-          <Notice tone="success">✅ Résultat enregistré et reporté dans le tournoi.</Notice>
+          <Notice tone="success">Résultat enregistré et reporté dans le tournoi.</Notice>
           <PrimaryButton type="button" onClick={() => onLeave(backPath)}>
             Retour au tournoi
           </PrimaryButton>
@@ -206,7 +206,7 @@ export function TournamentGame({ game, onChange, onLeave }: Props) {
         <div className="space-y-2">
           {save.kind === 'error' && <Notice tone="error">{save.message}</Notice>}
           <PrimaryButton type="button" busy={save.kind === 'saving'} onClick={() => void record()}>
-            {save.kind === 'error' ? 'Réessayer l’enregistrement' : '✅ Valider et reporter le résultat'}
+            {save.kind === 'error' ? 'Réessayer l’enregistrement' : 'Valider et reporter le résultat'}
           </PrimaryButton>
           {save.kind === 'error' && (
             <button
@@ -214,13 +214,13 @@ export function TournamentGame({ game, onChange, onLeave }: Props) {
               onClick={() => {
                 if (window.confirm('Abandonner cette partie ? Elle ne sera pas enregistrée.')) abandon()
               }}
-              className="w-full rounded-xl border border-clay/40 bg-white py-3 font-semibold text-clay"
+              className="w-full rounded-xl border border-ochre-text bg-white py-3 font-semibold text-clay"
             >
               Abandonner la partie
             </button>
           )}
           {save.kind !== 'saving' && (
-            <button type="button" onClick={undo} className="w-full py-2 text-sm text-ink/60 underline">
+            <button type="button" onClick={undo} className="w-full py-2 text-sm text-muted underline">
               ↶ Erreur de saisie : revenir à la partie
             </button>
           )}

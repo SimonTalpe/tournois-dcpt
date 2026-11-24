@@ -133,7 +133,7 @@ export function tournamentFinish(
 
   if (depth === 0) {
     if (!decided(outcome)) return { label: 'En finale', rank: null, final: false }
-    return won(outcome) ? { label: '🏆 Vainqueur', rank: 1, final: true } : { label: '🥈 Finaliste', rank: 2, final: true }
+    return won(outcome) ? { label: 'Vainqueur', rank: 1, final: true } : { label: 'Finaliste', rank: 2, final: true }
   }
   if (!decided(outcome) || won(outcome)) {
     // Encore en lice (match à jouer, ou vainqueur en attente du tour suivant).
@@ -144,7 +144,7 @@ export function tournamentFinish(
   if (third) {
     const o = outcomeOf(third, playerId)
     if (!decided(o)) return { label: 'Match pour la 3e place à jouer', rank: null, final: false }
-    return won(o) ? { label: '🥉 3e', rank: 3, final: true } : { label: '4e', rank: 4, final: true }
+    return won(o) ? { label: '3e', rank: 3, final: true } : { label: '4e', rank: 4, final: true }
   }
   const { label, rank } = eliminationLabel(depth, deepestRound.name)
   return withConsolation({ label, rank, final: true })

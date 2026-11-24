@@ -45,7 +45,7 @@ export function SpectatorPage() {
   }
 
   return (
-    <AuthScreen title="👀 Regarder">
+    <AuthScreen title="Regarder">
       {auth.demoMode && <DemoModeNotice />}
       <form className="space-y-4" onSubmit={handleSubmit} noValidate>
         <TextField

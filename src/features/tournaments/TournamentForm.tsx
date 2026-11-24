@@ -32,7 +32,7 @@ function Choice<T extends string>({
         {options.map((option) => (
           <label
             key={option.value}
-            className="cursor-pointer rounded-xl border border-ink/20 px-3 py-2 text-sm has-[:checked]:border-court has-[:checked]:bg-court has-[:checked]:text-chalk has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60"
+            className="cursor-pointer rounded-xl border border-black px-3 py-2 text-sm has-[:checked]:border-court has-[:checked]:bg-court has-[:checked]:text-chalk has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60"
           >
             <input
               type="radio"
@@ -72,7 +72,7 @@ function Toggle({
       />
       <span>
         <span className="block text-sm font-medium">{label}</span>
-        {hint && <span className="block text-xs text-ink/60">{hint}</span>}
+        {hint && <span className="block text-xs text-muted">{hint}</span>}
       </span>
     </label>
   )
@@ -193,7 +193,7 @@ export function TournamentForm({ initial, structureLocked = false, submitLabel, 
               onChange={(e) => set('qualifiers_per_pool', numberValue(e.target.value))}
             />
           </div>
-          <p className="text-xs text-ink/60">Les joueurs sont répartis au hasard ; les poules diffèrent au plus d'un joueur.</p>
+          <p className="text-xs text-muted">Les joueurs sont répartis au hasard ; les poules diffèrent au plus d'un joueur.</p>
           <Choice
             legend="Placement des qualifiés dans le tableau final"
             value={form.qualifier_placement}
@@ -203,7 +203,7 @@ export function TournamentForm({ initial, structureLocked = false, submitLabel, 
             ]}
             onChange={(value) => set('qualifier_placement', value)}
           />
-          <p className="text-xs text-ink/60">
+          <p className="text-xs text-muted">
             Croisement classique : 1er A contre 2e B, 1er B contre 2e A… ; deux joueurs d'une même poule se retrouvent
             le plus tard possible.
           </p>
@@ -235,7 +235,7 @@ export function TournamentForm({ initial, structureLocked = false, submitLabel, 
           onChange={(value) => set('default_sets_to_win', Number(value))}
         />
       ) : (
-        <fieldset className="space-y-3 rounded-xl border border-ink/10 p-3">
+        <fieldset className="space-y-3 rounded-xl border border-black p-3">
           <legend className="px-1 text-sm font-medium">Format de jeu par défaut (modifiable ensuite pour chaque tour)</legend>
           <Choice
             legend="Départ"

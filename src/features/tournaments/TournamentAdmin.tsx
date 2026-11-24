@@ -32,8 +32,8 @@ type Props = {
 
 function Card({ title, children, id }: { title: string; children: ReactNode; id?: string }) {
   return (
-    <section id={id} className="scroll-mt-4 space-y-3 rounded-2xl bg-white p-4 shadow-sm">
-      <h2 className="text-lg font-bold text-court">{title}</h2>
+    <section id={id} className="scroll-mt-4 space-y-3 bg-mist p-5">
+      <h2 className="font-display text-[30px] leading-none font-extrabold">{title}</h2>
       {children}
     </section>
   )
@@ -139,13 +139,13 @@ export function TournamentAdmin({ bundle, reload, onDeleted }: Props) {
       {isDraft && (
         <Card title={`Joueurs inscrits (${entries.length})`}>
           {sortedEntries.length === 0 ? (
-            <p className="text-sm text-ink/60">Aucun joueur pour le moment.</p>
+            <p className="text-sm text-muted">Aucun joueur pour le moment.</p>
           ) : (
             <ul className="flex flex-wrap gap-2">
               {sortedEntries.map((e) => (
-                <li key={e.player_id} className="flex items-center gap-2 rounded-full bg-court/10 py-1 pr-1 pl-3 text-sm">
+                <li key={e.player_id} className="flex items-center gap-2 rounded-full bg-mist py-1 pr-1 pl-3 text-sm">
                   {name(e.player_id)}
-                  {!players.get(e.player_id)?.profile_id && <span className="text-xs text-ink/50">(nom seul)</span>}
+                  {!players.get(e.player_id)?.profile_id && <span className="text-xs text-muted">(nom seul)</span>}
                   <SecondaryButton
                     danger
                     ariaLabel={`Désinscrire ${name(e.player_id)}`}
@@ -172,7 +172,7 @@ export function TournamentAdmin({ bundle, reload, onDeleted }: Props) {
 
       {isDraft && (
         <Card title="Lancement">
-          <p className="text-sm text-ink/70">
+          <p className="text-sm text-muted">
             Le tirage au sort place les joueurs (exempts, poules, domicile/extérieur). Tant qu'aucun match n'est joué, tu
             pourras refaire le tirage ou revenir en brouillon.
           </p>
@@ -180,7 +180,7 @@ export function TournamentAdmin({ bundle, reload, onDeleted }: Props) {
             <Notice>{configError}</Notice>
           ) : (
             <PrimaryButton type="button" busy={busy} onClick={() => draw(false)}>
-              🎲 Lancer le tournoi ({entries.length} joueurs)
+              Lancer le tournoi ({entries.length} joueurs)
             </PrimaryButton>
           )}
         </Card>
@@ -188,7 +188,7 @@ export function TournamentAdmin({ bundle, reload, onDeleted }: Props) {
 
       {!isDraft && rounds.length > 0 && (
         <Card title="Format de jeu par tour">
-          <ul className="divide-y divide-ink/10">
+          <ul className="divide-y divide-black">
             {sortRounds(rounds).map((round) => {
               const update = (change: Partial<Pick<Round, 'sets_to_win' | 'dart_start' | 'dart_double_out'>>) =>
                 run(() =>
@@ -214,7 +214,7 @@ export function TournamentAdmin({ bundle, reload, onDeleted }: Props) {
                     {tournament.discipline === 'darts' && (
                       <select
                         aria-label={`Départ — ${round.name}`}
-                        className="rounded-lg border border-ink/20 px-2 py-1.5 text-sm"
+                        className="rounded-lg border border-black px-2 py-1.5 text-sm"
                         value={round.dart_start}
                         disabled={busy}
                         onChange={(e) => update({ dart_start: Number(e.target.value) })}
@@ -228,7 +228,7 @@ export function TournamentAdmin({ bundle, reload, onDeleted }: Props) {
                     )}
                     <select
                       aria-label={`${tournament.discipline === 'darts' ? 'Manches' : 'Sets'} — ${round.name}`}
-                      className="rounded-lg border border-ink/20 px-2 py-1.5 text-sm"
+                      className="rounded-lg border border-black px-2 py-1.5 text-sm"
                       value={round.sets_to_win}
                       disabled={busy}
                       onChange={(e) => update({ sets_to_win: Number(e.target.value) })}
@@ -257,7 +257,7 @@ export function TournamentAdmin({ bundle, reload, onDeleted }: Props) {
             })}
           </ul>
           {tournament.format === 'pools_knockout' && (
-            <p className="text-xs text-ink/60">Les tours de la phase finale apparaîtront ici une fois celle-ci générée.</p>
+            <p className="text-xs text-muted">Les tours de la phase finale apparaîtront ici une fois celle-ci générée.</p>
           )}
         </Card>
       )}
@@ -266,11 +266,11 @@ export function TournamentAdmin({ bundle, reload, onDeleted }: Props) {
         <Card title="Phase finale">
           {finalPhaseExists ? (
             <>
-              <p className="text-sm text-ink/70">
+              <p className="text-sm text-muted">
                 Phase finale générée. Les résultats et départages de poule sont figés.
               </p>
               {finalPhaseHasResults ? (
-                <p className="text-sm text-ink/60">Un match de la phase finale est joué : elle ne peut plus être annulée.</p>
+                <p className="text-sm text-muted">Un match de la phase finale est joué : elle ne peut plus être annulée.</p>
               ) : (
                 <SecondaryButton
                   disabled={busy}
@@ -289,19 +289,19 @@ export function TournamentAdmin({ bundle, reload, onDeleted }: Props) {
             </>
           ) : finalPhase?.ok ? (
             <>
-              <p className="text-sm text-ink/70">
+              <p className="text-sm text-muted">
                 Toutes les poules sont terminées et départagées. Placement des qualifiés :{' '}
                 {tournament.qualifier_placement === 'classic' ? 'croisement classique' : 'tirage au sort'} (modifiable
                 dans « Nom et description » avant de générer).
               </p>
               <PrimaryButton type="button" busy={busy} onClick={generate}>
-                🏆 Générer la phase finale
+                Générer la phase finale
               </PrimaryButton>
             </>
           ) : (
             <>
-              <p className="text-sm text-ink/70">Avant de pouvoir générer la phase finale :</p>
-              <ul className="list-disc space-y-1 pl-5 text-sm text-ink/70">
+              <p className="text-sm text-muted">Avant de pouvoir générer la phase finale :</p>
+              <ul className="list-disc space-y-1 pl-5 text-sm text-muted">
                 {(finalPhase && !finalPhase.ok ? finalPhase.problems : []).map((p) => (
                   <li key={p}>{p}</li>
                 ))}
@@ -312,12 +312,12 @@ export function TournamentAdmin({ bundle, reload, onDeleted }: Props) {
       )}
 
       {isRunning && disabled.length > 0 && (
-        <Card title="⚠️ Comptes désactivés ou supprimés">
-          <p className="text-sm text-ink/70">
+        <Card title="Comptes désactivés ou supprimés">
+          <p className="text-sm text-muted">
             Ces joueurs ont un compte désactivé ou supprimé mais encore des matchs à jouer. Remplace-les, ou déclare-les forfait sur
             tous leurs matchs non joués.
           </p>
-          <ul className="divide-y divide-ink/10">
+          <ul className="divide-y divide-black">
             {disabled.map((d) => (
               <li key={d.player_id} className="flex flex-col gap-2 py-2 sm:flex-row sm:items-center sm:justify-between">
                 <span className="text-sm">
@@ -360,13 +360,13 @@ export function TournamentAdmin({ bundle, reload, onDeleted }: Props) {
 
       {isRunning && (
         <Card title="Remplacer un joueur" id="remplacer-un-joueur">
-          <p className="text-sm text-ink/70">
+          <p className="text-sm text-muted">
             Le remplaçant reprend la place du joueur dans tous ses matchs non joués. Les matchs déjà joués restent au nom
             de l'ancien joueur.
           </p>
           <select
             aria-label="Joueur à remplacer"
-            className="w-full rounded-xl border border-ink/20 px-3 py-2.5 text-base"
+            className="w-full rounded-xl border border-black px-3 py-2.5 text-base"
             value={replacing}
             onChange={(e) => setReplacing(e.target.value)}
           >
@@ -399,15 +399,15 @@ export function TournamentAdmin({ bundle, reload, onDeleted }: Props) {
       {isRunning && (
         <Card title="Tirage">
           {hasResults ? (
-            <p className="text-sm text-ink/70">Des matchs ont été joués : le tirage ne peut plus être refait.</p>
+            <p className="text-sm text-muted">Des matchs ont été joués : le tirage ne peut plus être refait.</p>
           ) : (
             <>
-              <p className="text-sm text-ink/70">
+              <p className="text-sm text-muted">
                 Aucun match n'est encore joué. Pour ajouter ou retirer des joueurs, reviens en brouillon puis relance.
               </p>
               <div className="flex flex-wrap gap-2">
                 <SecondaryButton disabled={busy} onClick={() => draw(true)}>
-                  🎲 Refaire le tirage
+                  Refaire le tirage
                 </SecondaryButton>
                 <SecondaryButton
                   disabled={busy}
@@ -445,7 +445,7 @@ export function TournamentAdmin({ bundle, reload, onDeleted }: Props) {
               disabled={busy}
               onClick={() => changeStatus('finished', 'Clôturer le tournoi ?', 'Tournoi terminé.')}
             >
-              🏁 Clôturer
+              Clôturer
             </SecondaryButton>
           )}
           {tournament.status === 'finished' && (
@@ -457,7 +457,7 @@ export function TournamentAdmin({ bundle, reload, onDeleted }: Props) {
                 disabled={busy}
                 onClick={() => changeStatus('archived', 'Archiver le tournoi ? Il restera consultable.', 'Tournoi archivé.')}
               >
-                🗄️ Archiver
+                Archiver
               </SecondaryButton>
             </>
           )}

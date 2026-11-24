@@ -38,7 +38,7 @@ export function BracketView({ bundle, bracket, highlightPlayerId, onOpenMatch }:
       <h3 className="truncate text-sm font-bold text-court" title={round.name}>
         {title(round)}
       </h3>
-      <p className="text-xs text-ink/50">{gameFormatLabel(tournament.discipline, round)}</p>
+      <p className="text-xs text-muted">{gameFormatLabel(tournament.discipline, round)}</p>
     </div>
   )
 
@@ -70,7 +70,7 @@ export function BracketView({ bundle, bracket, highlightPlayerId, onOpenMatch }:
                 ))}
               </div>
               {isLast && thirdPlace && (
-                <div className="mt-4 border-t border-dashed border-ink/20 pt-3">
+                <div className="mt-4 border-t border-dashed border-black pt-3">
                   {header(thirdPlace)}
                   {matches
                     .filter((m) => m.round_id === thirdPlace.id)

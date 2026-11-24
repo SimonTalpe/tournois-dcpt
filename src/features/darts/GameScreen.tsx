@@ -65,7 +65,7 @@ export function GameScreen({ config, state, canUndo, abandon = false, onDart, on
   const lastName = last ? config.players[last.player].name : ''
 
   return (
-    <div className="space-y-3 md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] md:gap-6 md:space-y-0">
+    <div className="counter-dark -mx-4 space-y-3 bg-black px-4 py-4 text-white sm:-mx-6 sm:px-6 md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] md:gap-6 md:space-y-0">
       {/* Tableau des scores : bandeau défilant sur mobile, liste sur ordinateur */}
       <section aria-label="Scores" className="md:order-1">
         <ol className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-col md:overflow-visible md:px-0">
@@ -82,7 +82,7 @@ export function GameScreen({ config, state, canUndo, abandon = false, onDart, on
                   isCurrent
                     ? 'border-court bg-court text-chalk'
                     : ps.finishRank !== null
-                      ? 'border-transparent bg-ball/40'
+                      ? 'border-transparent bg-ochre-tint'
                       : 'border-transparent bg-white'
                 }`}
               >
@@ -93,7 +93,7 @@ export function GameScreen({ config, state, canUndo, abandon = false, onDart, on
                   ) : (
                     <span className="text-2xl font-bold tabular-nums">{liveRemaining(state, i)}</span>
                   )}
-                  <span className={`text-xs tabular-nums ${isCurrent ? 'text-chalk/70' : 'text-ink/50'}`}>
+                  <span className={`text-xs tabular-nums ${isCurrent ? 'text-white' : 'text-muted'}`}>
                     {avg !== null ? `moy. ${avg}` : ''}
                   </span>
                 </span>
@@ -105,22 +105,22 @@ export function GameScreen({ config, state, canUndo, abandon = false, onDart, on
 
       <section aria-label="Saisie" className="space-y-3 md:order-2">
         {/* Joueur qui lance */}
-        <div className="rounded-2xl bg-white p-4 shadow-sm">
+        <div className="rounded-2xl bg-white p-4 border-2 border-black">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-xs text-ink/60">
-              {config.start} · {config.doubleOut ? 'sortie double' : 'sortie simple'} · volée {player.turns + 1}
+            <p className="text-xs text-muted">
+              {config.start}, {config.doubleOut ? 'sortie double' : 'sortie simple'}, volée {player.turns + 1}
             </p>
             <button
               type="button"
               onClick={() => setConfirmStop(true)}
-              className="rounded-lg border border-clay/40 px-2 py-1 text-xs font-medium text-clay hover:bg-clay/10"
+              className="min-h-11 border-2 border-white px-3 text-sm font-semibold text-white"
             >
-              {abandon ? '✕ Abandonner' : '⏹ Arrêter'}
+              {abandon ? 'Abandonner' : 'Arrêter'}
             </button>
           </div>
           <div className="mt-1 flex items-end justify-between gap-3">
             <p className="min-w-0 truncate text-lg font-bold text-court">{config.players[current].name}</p>
-            <p className="text-5xl leading-none font-black tabular-nums text-court" aria-label="Score restant">
+            <p className="font-display text-[88px] leading-[0.85] font-black tabular-nums text-ochre-light" aria-label="Score restant">
               {remaining}
             </p>
           </div>
@@ -129,7 +129,7 @@ export function GameScreen({ config, state, canUndo, abandon = false, onDart, on
               <span
                 key={i}
                 className={`rounded-lg py-2 text-center font-semibold tabular-nums ${
-                  state.turnDarts[i] ? 'bg-court/10 text-court' : 'border border-dashed border-ink/20 text-ink/30'
+                  state.turnDarts[i] ? 'bg-mist text-court' : 'border border-dashed border-black text-muted'
                 }`}
               >
                 {state.turnDarts[i] ? dartLabel(state.turnDarts[i]) : '–'}
@@ -140,15 +140,15 @@ export function GameScreen({ config, state, canUndo, abandon = false, onDart, on
           <div className="mt-2 min-h-6 text-sm" aria-live="polite">
             {checkout ? (
               <p className="font-semibold text-court">
-                🎯 Finish : {checkout.map(dartLabel).join(' · ')}
+                Finish conseillé : {checkout.map(dartLabel).join(' puis ')}
               </p>
             ) : last ? (
-              <p className={last.bust ? 'font-semibold text-clay' : 'text-ink/60'}>
-                {lastName} : {last.bust ? 'Bust ! 💥' : `${last.total}`}
-                {last.darts.length > 0 && <span className="text-ink/40"> ({last.darts.map(dartLabel).join(' · ')})</span>}
+              <p className={last.bust ? 'bg-ochre px-3 py-2 font-semibold text-white' : 'text-muted'}>
+                {last.bust ? `Bust pour ${lastName}, son score revient au début de la volée.` : `${lastName} : ${last.total}`}
+                {last.darts.length > 0 && !last.bust && <span className="text-muted"> ({last.darts.map(dartLabel).join(', ')})</span>}
               </p>
             ) : (
-              <p className="text-ink/40">3 fléchettes par volée.</p>
+              <p className="text-muted">3 fléchettes par volée.</p>
             )}
           </div>
         </div>
@@ -166,9 +166,9 @@ export function GameScreen({ config, state, canUndo, abandon = false, onDart, on
               type="button"
               onClick={onUndo}
               disabled={!canUndo}
-              className="rounded-xl bg-ink/10 py-3 font-semibold text-ink active:scale-95 disabled:opacity-30"
+              className="rounded-xl bg-mist py-3 font-semibold text-ink active:scale-95 disabled:opacity-30"
             >
-              ↶ Annuler
+              Annuler
             </button>
           </div>
           <div className="grid grid-cols-5 gap-2">
@@ -182,15 +182,15 @@ export function GameScreen({ config, state, canUndo, abandon = false, onDart, on
             <Key onClick={() => throwDart(25)} disabled={multiplier === 3} highlight={multiplier === 2}>
               {multiplier === 2 ? 'Bull (50)' : '25'}
             </Key>
-            <Key onClick={() => throwDart(0)}>0 · Raté</Key>
+            <Key onClick={() => throwDart(0)}>0, raté</Key>
           </div>
         </div>
 
       </section>
 
       {state.phase === 'decision' && state.lastFinisher !== null && (
-        <Dialog title={`🎉 ${config.players[state.lastFinisher].name} termine ${placeLabel(state.players[state.lastFinisher].finishRank ?? 1)} !`}>
-          <p className="text-sm text-ink/70">
+        <Dialog title={`${config.players[state.lastFinisher].name} termine ${placeLabel(state.players[state.lastFinisher].finishRank ?? 1)} !`}>
+          <p className="text-sm text-muted">
             Il reste {unfinishedCount(state)} joueurs en lice. On continue pour les places suivantes ?
           </p>
           <div className="space-y-2">
@@ -205,11 +205,11 @@ export function GameScreen({ config, state, canUndo, abandon = false, onDart, on
             <button
               type="button"
               onClick={onStop}
-              className="w-full rounded-xl border border-court/30 py-3 font-semibold text-court"
+              className="w-full rounded-xl border border-black py-3 font-semibold text-court"
             >
               S'arrêter là (classement actuel)
             </button>
-            <button type="button" onClick={onUndo} className="w-full py-2 text-sm text-ink/60 underline">
+            <button type="button" onClick={onUndo} className="w-full py-2 text-sm text-muted underline">
               ↶ Erreur de saisie : annuler la dernière fléchette
             </button>
           </div>
@@ -218,7 +218,7 @@ export function GameScreen({ config, state, canUndo, abandon = false, onDart, on
 
       {confirmStop && state.phase === 'playing' && (
         <Dialog title={abandon ? 'Abandonner la partie ?' : 'Arrêter la partie ?'}>
-          <p className="text-sm text-ink/70">
+          <p className="text-sm text-muted">
             {abandon
               ? 'Rien ne sera enregistré : le match reste à jouer (ou à saisir à la main).'
               : state.finishedCount === 0
@@ -240,7 +240,7 @@ export function GameScreen({ config, state, canUndo, abandon = false, onDart, on
               type="button"
               autoFocus
               onClick={() => setConfirmStop(false)}
-              className="w-full rounded-xl border border-court/30 py-3 font-semibold text-court"
+              className="w-full rounded-xl border border-black py-3 font-semibold text-court"
             >
               Reprendre la partie
             </button>
@@ -267,8 +267,8 @@ function Key({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`rounded-xl py-3 text-lg font-bold tabular-nums shadow-sm transition active:scale-95 disabled:opacity-30 md:py-4 ${
-        highlight ? 'bg-ball text-court' : 'bg-white text-ink'
+      className={`min-h-[52px] border-2 border-black font-display text-[26px] font-extrabold tabular-nums disabled:opacity-30 md:min-h-[64px] ${
+        highlight ? 'bg-ochre text-white' : 'bg-white text-ink'
       }`}
     >
       {children}
@@ -283,7 +283,7 @@ function ToggleKey({ children, active, onClick }: { children: ReactNode; active:
       aria-pressed={active}
       onClick={onClick}
       className={`rounded-xl py-3 font-semibold transition active:scale-95 ${
-        active ? 'bg-court text-chalk ring-2 ring-ball' : 'border-2 border-court/30 bg-white text-court'
+        active ? 'bg-court text-chalk ring-2 ring-ball' : 'border-2 border-black bg-white text-court'
       }`}
     >
       {children}
@@ -294,8 +294,8 @@ function ToggleKey({ children, active, onClick }: { children: ReactNode; active:
 export function Dialog({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="fixed inset-0 z-30 flex items-end justify-center bg-ink/50 p-0 sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-label={title}>
-      <div className="w-full max-w-sm space-y-4 rounded-t-3xl bg-white p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-xl sm:rounded-3xl">
-        <h2 className="text-xl font-bold text-court">{title}</h2>
+      <div className="w-full max-w-sm space-y-4 rounded-t-3xl bg-white p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] border-t-4 border-black sm:border-2 sm:rounded-3xl">
+        <h2 className="font-display text-[30px] leading-none font-extrabold">{title}</h2>
         {children}
       </div>
     </div>

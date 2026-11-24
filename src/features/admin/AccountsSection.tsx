@@ -114,8 +114,8 @@ export function AccountsSection() {
   }
 
   return (
-    <section className="space-y-3 rounded-2xl bg-white p-4 shadow-sm">
-      <h2 className="text-lg font-bold text-court">Comptes joueurs</h2>
+    <section className="space-y-3 bg-mist p-5">
+      <h2 className="font-display text-[30px] leading-none font-extrabold">Comptes joueurs</h2>
       {error && <Notice tone="error">{error}</Notice>}
       {message && <Notice tone="success">{message}</Notice>}
       {pending.length > 0 && (
@@ -134,11 +134,11 @@ export function AccountsSection() {
         </Notice>
       )}
       {!accounts ? (
-        <p className="text-sm text-ink/60">Chargement…</p>
+        <p className="text-sm text-muted">Chargement…</p>
       ) : accounts.length === 0 ? (
-        <p className="text-sm text-ink/60">Aucun compte pour le moment.</p>
+        <p className="text-sm text-muted">Aucun compte pour le moment.</p>
       ) : (
-        <ul className="divide-y divide-ink/10">
+        <ul className="divide-y divide-black">
           {accounts.map((account) => {
             const isMe = account.id === session?.user.id
             return (
@@ -148,14 +148,14 @@ export function AccountsSection() {
                     {account.full_name}
                     {account.role === 'admin' && <span className="ml-2 rounded bg-ball px-1.5 text-xs">admin</span>}
                     {account.status === 'disabled' && (
-                      <span className="ml-2 rounded bg-clay/15 px-1.5 text-xs text-clay">désactivé</span>
+                      <span className="ml-2 rounded bg-ochre-tint px-1.5 text-xs text-clay">désactivé</span>
                     )}
                     {!account.email_confirmed && (
-                      <span className="ml-2 rounded bg-ink/10 px-1.5 text-xs">email non confirmé</span>
+                      <span className="ml-2 rounded bg-mist px-1.5 text-xs">email non confirmé</span>
                     )}
                   </p>
-                  <p className="truncate text-sm text-ink/60">{account.email}</p>
-                  <p className="text-xs text-ink/50">
+                  <p className="truncate text-sm text-muted">{account.email}</p>
+                  <p className="text-xs text-muted">
                     Inscrit le {dateFormat.format(new Date(account.created_at))}
                     {account.last_sign_in_at && ` · dernière connexion le ${dateFormat.format(new Date(account.last_sign_in_at))}`}
                   </p>

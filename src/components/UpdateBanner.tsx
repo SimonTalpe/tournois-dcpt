@@ -50,14 +50,14 @@ export function UpdateBanner() {
   return (
     <div
       role="status"
-      className="fixed inset-x-3 bottom-20 z-30 mx-auto flex max-w-md items-center gap-3 rounded-2xl bg-ink px-4 py-3 text-sm text-chalk shadow-lg md:bottom-4"
+      className="fixed inset-x-3 bottom-20 z-30 mx-auto flex max-w-md items-center gap-3 border-t-4 border-ochre bg-black px-4 py-3 text-[15px] text-white md:bottom-4"
     >
-      <span className="flex-1">✨ Nouvelle version disponible.</span>
+      <span className="flex-1">Nouvelle version disponible.</span>
       <button
         type="button"
         onClick={() => void reload()}
         disabled={reloading}
-        className="rounded-lg bg-ball px-3 py-1.5 font-semibold text-court disabled:opacity-70"
+        className="min-h-11 bg-white px-3 font-semibold text-black disabled:opacity-70"
       >
         {reloading ? 'Rechargement…' : 'Recharger'}
       </button>
@@ -66,7 +66,7 @@ export function UpdateBanner() {
         aria-label="Plus tard"
         title="Plus tard"
         onClick={() => setNeedRefresh(false)}
-        className="px-1 text-chalk/60 hover:text-chalk"
+        className="min-h-11 min-w-11 text-white"
       >
         ✕
       </button>

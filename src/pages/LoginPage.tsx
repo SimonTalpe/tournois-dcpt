@@ -52,7 +52,7 @@ export function LoginPage() {
   }
 
   return (
-    <AuthScreen title="🏓 Jouer">
+    <AuthScreen title="Jouer">
       {auth.demoMode && <DemoModeNotice />}
       {disabledAccount && (
         <Notice tone="error">Ce compte est désactivé. Contacte l'administrateur du site.</Notice>
@@ -82,12 +82,12 @@ export function LoginPage() {
         </PrimaryButton>
       </form>
       <div className="flex flex-col gap-2 text-center text-sm">
-        <Link to="/mot-de-passe-oublie" className="text-court underline">
+        <Link to="/mot-de-passe-oublie" className="text-ochre-text underline">
           Mot de passe oublié ?
         </Link>
         <p>
           Pas encore de compte ?{' '}
-          <Link to="/inscription" className="font-semibold text-court underline">
+          <Link to="/inscription" className="font-semibold text-ochre-text underline">
             Créer un compte
           </Link>
         </p>

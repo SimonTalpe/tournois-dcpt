@@ -28,17 +28,17 @@ export function MatchLegsDetail({ matchId, resultAt, playerIds, name }: Props) {
   const { lines, totals } = summarizeLegs(legs)
   return (
     <div className="space-y-2 rounded-xl bg-chalk p-3 text-sm">
-      <p className="text-xs font-semibold tracking-wide text-ink/50 uppercase">🎯 Joué au compteur</p>
+      <p className="text-xs font-semibold text-muted">Joué au compteur</p>
       {lines.length > 1 && (
         <ol className="space-y-0.5">
           {lines.map((line) => {
             const loser = playerIds.find((id) => id !== line.winner)
             return (
               <li key={line.number} className="flex justify-between gap-2">
-                <span className="text-ink/60">Manche {line.number}</span>
+                <span className="text-muted">Manche {line.number}</span>
                 <span className="truncate">
                   {line.winner ? name(line.winner) : '?'}
-                  {loser && <span className="text-ink/60"> · {name(loser)} reste {line.remaining.get(loser)}</span>}
+                  {loser && <span className="text-muted"> · {name(loser)} reste {line.remaining.get(loser)}</span>}
                 </span>
               </li>
             )
@@ -53,13 +53,13 @@ export function MatchLegsDetail({ matchId, resultAt, playerIds, name }: Props) {
             .join(' · ')}
         </p>
       )}
-      <ul className="space-y-0.5 border-t border-ink/10 pt-2">
+      <ul className="space-y-0.5 border-t border-black pt-2">
         {playerIds.map((id) => {
           const t = totals.find((x) => x.playerId === id)
           return (
             <li key={id} className="flex justify-between gap-2">
               <span className="truncate">{name(id)}</span>
-              <span className="shrink-0 text-ink/60 tabular-nums">
+              <span className="shrink-0 text-muted tabular-nums">
                 {t?.darts ?? 0} fléchettes{t?.average != null && ` · moy. ${t.average}`}
               </span>
             </li>

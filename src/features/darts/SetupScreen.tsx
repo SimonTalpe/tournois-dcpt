@@ -89,34 +89,34 @@ export function SetupScreen({ local, initial, onLaunch, viewer }: Props) {
   return (
     <div className="space-y-6">
       {local && (
-        <Notice>👀 Mode local : la partie se joue sur cet appareil et ne sera pas enregistrée.</Notice>
+        <Notice>Mode local : la partie se joue sur cet appareil et ne sera pas enregistrée.</Notice>
       )}
 
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold text-court">
-            Joueurs <span className="text-sm font-normal text-ink/60">({participants.length}/{MAX_PLAYERS})</span>
+          <h2 className="font-display text-[30px] leading-none font-extrabold">
+            Joueurs <span className="text-sm font-normal text-muted">({participants.length}/{MAX_PLAYERS})</span>
           </h2>
           {participants.length > 1 && (
             <button
               type="button"
               onClick={() => setParticipants((list) => shuffled(list))}
-              className="rounded-lg border border-court/30 px-3 py-1.5 text-sm font-medium text-court hover:bg-court/10"
+              className="rounded-lg border border-black px-3 py-1.5 text-sm font-medium text-court hover:bg-mist"
             >
-              🔀 Tirer au sort l'ordre
+              Tirer au sort l'ordre
             </button>
           )}
         </div>
 
         {participants.length > 0 ? (
-          <ol className="divide-y divide-ink/10 rounded-2xl bg-white shadow-sm">
+          <ol className="divide-y divide-black rounded-2xl bg-white border-2 border-black">
             {participants.map((p, i) => (
               <li key={p.key} className="flex items-center gap-2 px-3 py-2">
                 <span className="w-6 shrink-0 text-center font-bold text-court">{i + 1}</span>
                 <span className="min-w-0 flex-1 truncate">
                   {p.name}
                   {KIND_LABELS[p.ref.kind] && (
-                    <span className="ml-2 rounded bg-ink/10 px-1.5 text-xs">{KIND_LABELS[p.ref.kind]}</span>
+                    <span className="ml-2 rounded bg-mist px-1.5 text-xs">{KIND_LABELS[p.ref.kind]}</span>
                   )}
                 </span>
                 <IconButton
@@ -144,11 +144,11 @@ export function SetupScreen({ local, initial, onLaunch, viewer }: Props) {
             ))}
           </ol>
         ) : (
-          <p className="text-sm text-ink/60">Ajoute au moins un joueur (une partie à 1 = entraînement).</p>
+          <p className="text-sm text-muted">Ajoute au moins un joueur (une partie à 1 = entraînement).</p>
         )}
 
         {full ? (
-          <p className="text-sm text-ink/60">Nombre maximum de joueurs atteint.</p>
+          <p className="text-sm text-muted">Nombre maximum de joueurs atteint.</p>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-2">
             <div className="flex gap-2">
@@ -158,7 +158,7 @@ export function SetupScreen({ local, initial, onLaunch, viewer }: Props) {
                 placeholder={local ? 'Nom du joueur…' : 'Rechercher ou saisir un nom…'}
                 autoComplete="off"
                 enterKeyHint="done"
-                className="min-w-0 flex-1 rounded-xl border border-ink/20 bg-white px-3 py-2.5 text-base outline-none focus:ring-2 focus:ring-court/40"
+                className="min-w-0 flex-1 rounded-xl border border-black bg-white px-3 py-2.5 text-base outline-none focus:ring-2 focus:ring-ochre"
                 value={query}
                 onChange={(e) => {
                   setQuery(e.target.value)
@@ -180,17 +180,17 @@ export function SetupScreen({ local, initial, onLaunch, viewer }: Props) {
                     <button
                       type="button"
                       onClick={() => addPerson(p)}
-                      className="rounded-full border border-court/30 bg-white px-3 py-1.5 text-sm hover:bg-court/10"
+                      className="rounded-full border border-black bg-white px-3 py-1.5 text-sm hover:bg-mist"
                     >
                       + {p.full_name}
-                      {p.kind === 'name_only' && <span className="ml-1 text-xs text-ink/50">(nom seul)</span>}
+                      {p.kind === 'name_only' && <span className="ml-1 text-xs text-muted">(nom seul)</span>}
                     </button>
                   </li>
                 ))}
               </ul>
             )}
             {!local && trimmed.length >= 2 && !exactSuggestion && (
-              <button type="button" onClick={addNewName} className="text-sm font-medium text-court underline">
+              <button type="button" onClick={addNewName} className="text-sm font-medium text-ochre-text underline">
                 + Ajouter « {trimmed} » comme nouveau joueur (sans compte)
               </button>
             )}
@@ -201,7 +201,7 @@ export function SetupScreen({ local, initial, onLaunch, viewer }: Props) {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-court">Règles</h2>
+        <h2 className="font-display text-[30px] leading-none font-extrabold">Règles</h2>
         <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Mode de jeu">
           {([301, 501] as const).map((mode) => (
             <button
@@ -211,17 +211,17 @@ export function SetupScreen({ local, initial, onLaunch, viewer }: Props) {
               aria-checked={start === mode}
               onClick={() => setStart(mode)}
               className={`rounded-xl border-2 py-3 text-xl font-bold transition ${
-                start === mode ? 'border-court bg-court text-chalk' : 'border-court/20 bg-white text-court'
+                start === mode ? 'border-court bg-court text-chalk' : 'border-black bg-white text-court'
               }`}
             >
               {mode}
             </button>
           ))}
         </div>
-        <label className="flex cursor-pointer items-center justify-between gap-3 rounded-xl bg-white px-4 py-3 shadow-sm">
+        <label className="flex cursor-pointer items-center justify-between gap-3 rounded-xl bg-white px-4 py-3 border-2 border-black">
           <span>
             <span className="block font-medium">Finir sur un double</span>
-            <span className="block text-xs text-ink/60">Le dernier lancer doit être un double (ou le Bull).</span>
+            <span className="block text-xs text-muted">Le dernier lancer doit être un double (ou le Bull).</span>
           </span>
           <input
             type="checkbox"
@@ -235,13 +235,13 @@ export function SetupScreen({ local, initial, onLaunch, viewer }: Props) {
       {!local && (
         <section className="space-y-2">
           <label
-            className={`flex items-center justify-between gap-3 rounded-xl px-4 py-3 shadow-sm ${
-              canRank ? 'cursor-pointer bg-white' : 'bg-white/60 text-ink/50'
+            className={`flex items-center justify-between gap-3 rounded-xl px-4 py-3 border-2 border-black ${
+              canRank ? 'cursor-pointer bg-white' : 'bg-white/60 text-muted'
             }`}
           >
             <span>
-              <span className="block font-medium">🏅 Match classé</span>
-              <span className="block text-xs text-ink/60">
+              <span className="block font-medium">Match classé</span>
+              <span className="block text-xs text-muted">
                 {canRank
                   ? 'Le résultat compte pour l’Elo des deux joueurs ; ton adversaire sera notifié.'
                   : 'Possible à 2 joueurs avec compte (dont toi), en 301 sortie simple.'}
@@ -263,7 +263,7 @@ export function SetupScreen({ local, initial, onLaunch, viewer }: Props) {
         disabled={participants.length === 0}
         onClick={() => onLaunch({ participants, start, doubleOut, ranked: canRank && ranked })}
       >
-        {canRank && ranked ? '🏅 Lancer le match classé' : '🎯 Lancer la partie'}
+        {canRank && ranked ? 'Lancer le match classé' : 'Lancer la partie'}
       </PrimaryButton>
     </div>
   )
@@ -290,7 +290,7 @@ function IconButton({
       onClick={onClick}
       disabled={disabled}
       className={`h-9 w-9 shrink-0 rounded-lg text-lg disabled:opacity-25 ${
-        danger ? 'text-clay hover:bg-clay/10' : 'text-court hover:bg-court/10'
+        danger ? 'text-clay hover:bg-ochre-tint' : 'text-court hover:bg-mist'
       }`}
     >
       {children}

@@ -99,20 +99,20 @@ export function NameOnlySection() {
   }
 
   return (
-    <section className="space-y-3 rounded-2xl bg-white p-4 shadow-sm">
-      <h2 className="text-lg font-bold text-court">Noms seuls</h2>
-      <p className="text-sm text-ink/60">
+    <section className="space-y-3 bg-mist p-5">
+      <h2 className="font-display text-[30px] leading-none font-extrabold">Noms seuls</h2>
+      <p className="text-sm text-muted">
         Joueurs sans compte. Quand l'un d'eux crée son compte, rattache-le : ses inscriptions et ses matchs passent sur
         son compte.
       </p>
       {error && <Notice tone="error">{error}</Notice>}
       {message && <Notice tone="success">{message}</Notice>}
       {!players ? (
-        <p className="text-sm text-ink/60">Chargement…</p>
+        <p className="text-sm text-muted">Chargement…</p>
       ) : players.length === 0 ? (
-        <p className="text-sm text-ink/60">Aucun nom seul.</p>
+        <p className="text-sm text-muted">Aucun nom seul.</p>
       ) : (
-        <ul className="divide-y divide-ink/10">
+        <ul className="divide-y divide-black">
           {players.map((player) => {
             const current = mode?.playerId === player.id ? mode.kind : null
             return (
@@ -120,7 +120,7 @@ export function NameOnlySection() {
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
                     <p className="font-semibold">{player.full_name}</p>
-                    <p className="text-xs text-ink/60">
+                    <p className="text-xs text-muted">
                       {player.tournaments.length === 0
                         ? 'Aucun tournoi'
                         : `${player.tournaments.join(', ')} · ${player.match_count} match${player.match_count > 1 ? 's' : ''}`}
@@ -147,7 +147,7 @@ export function NameOnlySection() {
                   <div className="flex flex-col gap-2 rounded-xl bg-chalk p-3 sm:flex-row sm:items-center">
                     <select
                       aria-label="Compte à rattacher"
-                      className="w-full rounded-xl border border-ink/20 bg-white px-3 py-2.5 text-base sm:flex-1"
+                      className="w-full rounded-xl border border-black bg-white px-3 py-2.5 text-base sm:flex-1"
                       value={accountId}
                       onChange={(e) => setAccountId(e.target.value)}
                     >
@@ -168,7 +168,7 @@ export function NameOnlySection() {
                   <div className="flex flex-col gap-2 rounded-xl bg-chalk p-3 sm:flex-row sm:items-center">
                     <input
                       aria-label="Nouveau nom"
-                      className="w-full rounded-xl border border-ink/20 px-3 py-2.5 text-base sm:flex-1"
+                      className="w-full rounded-xl border border-black px-3 py-2.5 text-base sm:flex-1"
                       value={newName}
                       maxLength={80}
                       onChange={(e) => setNewName(e.target.value)}

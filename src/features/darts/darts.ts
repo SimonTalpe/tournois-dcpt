@@ -39,9 +39,9 @@ export function placeLabel(rank: number): string {
   return rank === 1 ? '1er' : `${rank}e`
 }
 
-/** Médaille pour les 3 premiers, sinon la place. */
+/** Rang affiché dans les classements de partie (chiffre seul, le design n'utilise pas d'émojis). */
 export function medal(rank: number): string {
-  return rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : placeLabel(rank)
+  return String(rank)
 }
 
 // ---------------------------------------------------------------- Finishs

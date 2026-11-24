@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { Notice, PrimaryButton, SecondaryButton } from '../../components/ui.tsx'
 import { newGameId } from '../darts/storage.ts'
-import { DISCIPLINE_ICONS, DISCIPLINE_LABELS, type Discipline } from '../tournaments/types.ts'
+import { DISCIPLINE_LABELS, type Discipline } from '../tournaments/types.ts'
 import {
   correctRankedMatch,
   deleteRankedMatch,
@@ -53,7 +53,7 @@ function Dialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="ranked-dialog-title"
-        className="max-h-[92vh] w-full max-w-md space-y-4 overflow-y-auto rounded-t-3xl bg-white p-5 shadow-xl sm:rounded-3xl"
+        className="max-h-[92vh] w-full max-w-md space-y-4 overflow-y-auto rounded-t-3xl bg-white p-5 border-t-4 border-black sm:border-2 sm:rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
         <header className="flex items-start justify-between gap-3">
@@ -61,12 +61,12 @@ function Dialog({
             <h2 id="ranked-dialog-title" className="text-lg font-bold text-court">
               {title}
             </h2>
-            <p className="text-sm text-ink/60">{subtitle}</p>
+            <p className="text-sm text-muted">{subtitle}</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg px-2 py-1 text-xl text-ink/50 hover:bg-ink/5"
+            className="rounded-lg px-2 py-1 text-xl text-muted hover:bg-ink/5"
             aria-label="Fermer"
           >
             ✕
@@ -105,14 +105,14 @@ function ScoreFields({
           max={99}
           value={form[side]}
           onChange={(e) => onChange({ ...form, [side]: e.target.value })}
-          className="w-full rounded-xl border border-ink/20 px-3 py-3 text-center text-2xl font-bold tabular-nums outline-none focus:ring-2 focus:ring-court/40"
+          className="w-full rounded-xl border border-black px-3 py-3 text-center text-2xl font-bold tabular-nums outline-none focus:ring-2 focus:ring-ochre"
         />
       </label>
     )
     return (
       <div className="flex items-end gap-3">
         {field('home', homeName)}
-        <span className="pb-3 text-xl text-ink/40">–</span>
+        <span className="pb-3 text-xl text-muted">–</span>
         {field('away', awayName)}
       </div>
     )
@@ -129,10 +129,10 @@ function ScoreFields({
             aria-checked={form.winner === side}
             onClick={() => onChange({ ...form, winner: side })}
             className={`truncate rounded-xl border-2 px-2 py-3 font-semibold transition ${
-              form.winner === side ? 'border-court bg-court text-chalk' : 'border-court/20 bg-white text-court'
+              form.winner === side ? 'border-court bg-court text-chalk' : 'border-black bg-white text-court'
             }`}
           >
-            🏆 {side === 'home' ? homeName : awayName}
+            {side === 'home' ? homeName : awayName}
           </button>
         ))}
       </div>
@@ -145,7 +145,7 @@ function ScoreFields({
           max={301}
           value={form.loserRemaining}
           onChange={(e) => onChange({ ...form, loserRemaining: e.target.value })}
-          className="w-full rounded-xl border border-ink/20 px-3 py-2.5 text-base outline-none focus:ring-2 focus:ring-court/40"
+          className="w-full rounded-xl border border-black px-3 py-2.5 text-base outline-none focus:ring-2 focus:ring-ochre"
         />
       </label>
     </div>
@@ -155,7 +155,7 @@ function ScoreFields({
 function DeltaNotice({ deltas, homeName, awayName }: { deltas: RankedDeltas; homeName: string; awayName: string }) {
   return (
     <Notice tone="success">
-      ✅ Match enregistré. Elo : {homeName} {deltas.home_delta === null ? '' : formatDelta(deltas.home_delta)} · {awayName}{' '}
+      Match enregistré. Elo : {homeName} {deltas.home_delta === null ? '' : formatDelta(deltas.home_delta)} · {awayName}{' '}
       {deltas.away_delta === null ? '' : formatDelta(deltas.away_delta)}
     </Notice>
   )
@@ -228,7 +228,7 @@ export function NewRankedMatchDialog({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border border-ink/20 bg-white px-3 py-2.5 text-base outline-none focus:ring-2 focus:ring-court/40"
+        className="w-full rounded-xl border border-black bg-white px-3 py-2.5 text-base outline-none focus:ring-2 focus:ring-ochre"
       >
         <option value="">— Choisir —</option>
         {people
@@ -244,7 +244,7 @@ export function NewRankedMatchDialog({
 
   return (
     <Dialog
-      title={`${DISCIPLINE_ICONS[discipline]} Match classé`}
+      title={`Match classé`}
       subtitle={`${DISCIPLINE_LABELS[discipline]} · ${RANKED_FORMAT_LABELS[discipline]}`}
       onClose={onClose}
     >
@@ -266,13 +266,13 @@ export function NewRankedMatchDialog({
             select(awayId, setAwayId, 'Adversaire', homeId)
           )}
           <ScoreFields form={form} onChange={setForm} homeName={homeName} awayName={awayName} />
-          <p className="text-xs text-ink/60">
+          <p className="text-xs text-muted">
             Le résultat compte tout de suite pour l’Elo. Tu peux le corriger ou l’effacer pendant 24 heures ; ensuite, seul
             l’admin le peut. 3 matchs classés par jour au plus contre le même adversaire.
           </p>
           {error && <Notice tone="error">{error}</Notice>}
           <PrimaryButton type="button" busy={busy} onClick={() => void save()}>
-            ✅ Enregistrer le match
+            Enregistrer le match
           </PrimaryButton>
         </>
       )}
@@ -316,7 +316,7 @@ export function RankedMatchDialog({
   if (match === undefined) {
     return (
       <Dialog title="Match classé" subtitle="" onClose={onClose}>
-        <p className="text-ink/60">Chargement…</p>
+        <p className="text-muted">Chargement…</p>
       </Dialog>
     )
   }
@@ -384,23 +384,23 @@ export function RankedMatchDialog({
 
   return (
     <Dialog
-      title={`${DISCIPLINE_ICONS[match.discipline]} Match classé`}
+      title={`Match classé`}
       subtitle={`${DISCIPLINE_LABELS[match.discipline]} · ${dateTimeFormat.format(new Date(match.played_at))}`}
       onClose={onClose}
     >
       <div className="space-y-1 rounded-2xl bg-chalk p-4">
         <p className="text-lg">
-          🏆 <PlayerLink player={match.winner_player_id === match.home_player_id ? match.home : match.away} name={winnerName} />{' '}
-          <span className="text-ink/60">bat</span>{' '}
+          <PlayerLink player={match.winner_player_id === match.home_player_id ? match.home : match.away} name={winnerName} />{' '}
+          <span className="text-muted">bat</span>{' '}
           <PlayerLink player={match.winner_player_id === match.home_player_id ? match.away : match.home} name={loserName} />
         </p>
         {score && (
-          <p className="text-sm text-ink/70 tabular-nums">
+          <p className="text-sm text-muted tabular-nums">
             {match.discipline === 'mini_pong' ? `${homeName} ${score} ${awayName}` : `Perdant : ${score}`}
           </p>
         )}
-        {match.dart_game_id && <p className="text-xs text-ink/50">🎯 Joué au compteur</p>}
-        <p className="text-xs text-ink/50">
+        {match.dart_game_id && <p className="text-xs text-muted">Joué au compteur</p>}
+        <p className="text-xs text-muted">
           Saisi par {match.author?.full_name ?? 'un joueur'}
           {match.created_by_admin ? ' (admin)' : ''}
           {match.updated_at !== match.played_at &&
@@ -414,7 +414,7 @@ export function RankedMatchDialog({
       {!rights.canEdit && rights.reason && <Notice>{rights.reason}</Notice>}
 
       {rights.canEdit && editing && form && (
-        <div className="space-y-3 border-t border-ink/10 pt-4">
+        <div className="space-y-3 border-t border-black pt-4">
           <h3 className="font-semibold">Corriger le résultat</h3>
           <ScoreFields form={form} onChange={setForm} homeName={homeName} awayName={awayName} />
           <div className="flex items-center gap-3">
@@ -423,16 +423,16 @@ export function RankedMatchDialog({
                 Enregistrer la correction
               </PrimaryButton>
             </div>
-            <button type="button" className="text-sm text-ink/60 underline" onClick={() => setEditing(false)}>
+            <button type="button" className="text-sm text-muted underline" onClick={() => setEditing(false)}>
               Annuler
             </button>
           </div>
         </div>
       )}
       {rights.canEdit && !editing && (
-        <div className="flex flex-wrap gap-2 border-t border-ink/10 pt-4">
+        <div className="flex flex-wrap gap-2 border-t border-black pt-4">
           <SecondaryButton disabled={busy} onClick={() => startEdit(match)}>
-            ✏️ Corriger
+            Corriger
           </SecondaryButton>
           <SecondaryButton danger disabled={busy} onClick={() => void remove()}>
             Effacer le match
@@ -447,7 +447,7 @@ export function RankedMatchDialog({
 function PlayerLink({ player, name }: { player: { id: string } | null; name: string }) {
   if (!player) return <span className="font-semibold">{name}</span>
   return (
-    <Link to={`/joueurs/${player.id}`} className="font-semibold text-court underline-offset-2 hover:underline">
+    <Link to={`/joueurs/${player.id}`} className="font-semibold text-ochre-text underline-offset-2 hover:underline">
       {name}
     </Link>
   )

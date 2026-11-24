@@ -59,16 +59,16 @@ export function AllowedEmailsSection() {
   }
 
   return (
-    <section className="space-y-3 rounded-2xl bg-white p-4 shadow-sm">
-      <h2 className="text-lg font-bold text-court">Adresses autorisées à l'inscription</h2>
-      <p className="text-sm text-ink/70">
+    <section className="space-y-3 bg-mist p-5">
+      <h2 className="font-display text-[30px] leading-none font-extrabold">Adresses autorisées à l'inscription</h2>
+      <p className="text-sm text-muted">
         Les comptes déjà créés ne sont pas concernés par un retrait : utilise « Désactiver » pour cela.
       </p>
       <div className="space-y-2">
         <h3 className="text-sm font-semibold">Domaines</h3>
         <ul className="flex flex-wrap gap-2">
           {domains.map((domain) => (
-            <li key={domain} className="flex items-center gap-2 rounded-full bg-court/10 py-1 pr-1 pl-3 text-sm">
+            <li key={domain} className="flex items-center gap-2 rounded-full bg-mist py-1 pr-1 pl-3 text-sm">
               @{domain}
               <SecondaryButton danger onClick={() => remove('domain', domain)}>
                 Retirer
@@ -78,11 +78,11 @@ export function AllowedEmailsSection() {
         </ul>
         <h3 className="text-sm font-semibold">Adresses individuelles (tests)</h3>
         {emails.length === 0 ? (
-          <p className="text-sm text-ink/60">Aucune.</p>
+          <p className="text-sm text-muted">Aucune.</p>
         ) : (
           <ul className="flex flex-wrap gap-2">
             {emails.map((email) => (
-              <li key={email} className="flex items-center gap-2 rounded-full bg-ball/30 py-1 pr-1 pl-3 text-sm break-all">
+              <li key={email} className="flex items-center gap-2 rounded-full bg-ochre-tint py-1 pr-1 pl-3 text-sm break-all">
                 {email}
                 <SecondaryButton danger onClick={() => remove('email', email)}>
                   Retirer

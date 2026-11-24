@@ -9,35 +9,40 @@ export function EntryPage() {
   if (!auth.demoMode && !auth.loading && canViewSite(auth)) return <Navigate to="/accueil" replace />
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-10 bg-court px-6 py-12 text-chalk">
-      <div className="flex flex-col items-center gap-4 text-center">
-        <img src="/pwa-192x192.png" alt="" className="h-24 w-24 rounded-3xl shadow-lg" />
-        <h1 className="text-3xl font-bold sm:text-4xl">Mini-pong et fléchettes</h1>
-        <p className="max-w-sm text-chalk/80">Les tournois de la pause, entre collègues.</p>
+    <main className="flex min-h-screen flex-col border-t-8 border-ochre bg-white text-black lg:grid lg:grid-cols-2">
+      <div className="flex flex-col gap-4 px-5 pt-10 pb-6 sm:px-10 lg:justify-center lg:p-20">
+        <h1>
+          <span className="block font-display text-[120px] leading-[0.8] font-black lg:text-[200px]">MPF</span>
+          <span className="mt-3 block text-lg font-semibold lg:text-[22px]">Mini-pong et fléchettes</span>
+        </h1>
+        <p className="max-w-[34ch] text-base leading-normal lg:text-lg">Les tournois de la pause, entre collègues de la FFT.</p>
+        {accountDeleted && (
+          <p role="status" className="max-w-sm border-l-4 border-black bg-mist p-3 text-[15px]">
+            Ton compte a bien été supprimé. Merci d’avoir joué !
+          </p>
+        )}
       </div>
 
-      {accountDeleted && (
-        <p role="status" className="max-w-sm rounded-xl bg-chalk/15 px-4 py-3 text-center text-sm">
-          Ton compte a bien été supprimé. Merci d’avoir joué ! 👋
-        </p>
-      )}
-
-      <div className="flex w-full max-w-sm flex-col gap-4">
+      <nav aria-label="Choisir comment entrer" className="mt-auto flex flex-col lg:mt-0 lg:grid lg:min-h-screen lg:grid-rows-2">
         <Link
           to="/jouer"
-          className="rounded-2xl bg-ball px-6 py-4 text-center text-lg font-bold text-court shadow-lg transition hover:brightness-105 active:scale-[0.98]"
+          className="group flex flex-col justify-end gap-3 bg-black px-5 py-7 text-white sm:px-10 lg:p-14"
         >
-          🏓 Jouer
-          <span className="block text-sm font-normal">Se connecter avec son compte</span>
+          <span className="font-display text-[72px] leading-[0.85] font-black group-hover:underline group-hover:decoration-4 group-hover:underline-offset-[10px] lg:text-[clamp(88px,9vw,128px)]">
+            Jouer
+          </span>
+          <span className="text-[15px] lg:text-lg">Avec ton compte @fft.fr</span>
         </Link>
         <Link
           to="/regarder"
-          className="rounded-2xl border-2 border-chalk/70 px-6 py-4 text-center text-lg font-bold transition hover:bg-court-light active:scale-[0.98]"
+          className="group flex flex-col justify-end gap-3 bg-ochre px-5 pt-7 pb-10 text-white sm:px-10 lg:p-14"
         >
-          👀 Regarder
-          <span className="block text-sm font-normal">Suivre les tournois avec le code commun</span>
+          <span className="font-display text-[72px] leading-[0.85] font-black group-hover:underline group-hover:decoration-4 group-hover:underline-offset-[10px] lg:text-[clamp(88px,9vw,128px)]">
+            Regarder
+          </span>
+          <span className="text-[15px] lg:text-lg">Avec le code spectateur, sans compte</span>
         </Link>
-      </div>
+      </nav>
     </main>
   )
 }

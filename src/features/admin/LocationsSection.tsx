@@ -47,25 +47,25 @@ export function LocationsSection() {
   }
 
   return (
-    <section className="space-y-3 rounded-2xl bg-white p-4 shadow-sm">
-      <h2 className="text-lg font-bold text-court">Lieux des matchs</h2>
+    <section className="space-y-3 bg-mist p-5">
+      <h2 className="font-display text-[30px] leading-none font-extrabold">Lieux des matchs</h2>
       {error && <Notice tone="error">{error}</Notice>}
       {!locations ? (
-        <p className="text-sm text-ink/60">Chargement…</p>
+        <p className="text-sm text-muted">Chargement…</p>
       ) : (
-        <ul className="divide-y divide-ink/10">
+        <ul className="divide-y divide-black">
           {locations.map((location) => (
             <li key={location.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
               {editing?.id === location.id ? (
                 <input
                   aria-label="Nouveau nom du lieu"
-                  className="min-w-0 flex-1 rounded-xl border border-ink/20 px-3 py-2 text-base"
+                  className="min-w-0 flex-1 rounded-xl border border-black px-3 py-2 text-base"
                   value={editing.name}
                   maxLength={40}
                   onChange={(e) => setEditing({ id: location.id, name: e.target.value })}
                 />
               ) : (
-                <span>📍 {location.name}</span>
+                <span>{location.name}</span>
               )}
               <div className="flex gap-2">
                 {editing?.id === location.id ? (
@@ -111,7 +111,7 @@ export function LocationsSection() {
         <input
           aria-label="Nom du nouveau lieu"
           placeholder="Nouveau lieu (ex. Cafétéria)"
-          className="min-w-0 flex-1 rounded-xl border border-ink/20 px-3 py-2.5 text-base"
+          className="min-w-0 flex-1 rounded-xl border border-black px-3 py-2.5 text-base"
           value={newName}
           maxLength={40}
           onChange={(e) => setNewName(e.target.value)}

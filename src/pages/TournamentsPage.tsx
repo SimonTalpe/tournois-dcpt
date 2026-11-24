@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router'
-import { DemoModeNotice, Notice, PrimaryButton } from '../components/ui.tsx'
+import { Link, useNavigate, useSearchParams } from 'react-router'
+import { DemoModeNotice, Notice, PageTitle, PrimaryButton, SectionTitle } from '../components/ui.tsx'
 import { isAdmin, useAuth } from '../features/auth/AuthContext.ts'
 import { createTournament, listTournaments } from '../features/tournaments/api.ts'
 import { TournamentForm } from '../features/tournaments/TournamentForm.tsx'
 import {
-  DISCIPLINE_ICONS,
   DISCIPLINE_LABELS,
   EMPTY_TOURNAMENT,
   FORMAT_LABELS,
@@ -16,7 +15,7 @@ import {
 
 const SECTIONS: { status: TournamentStatus; title: string }[] = [
   { status: 'in_progress', title: 'En cours' },
-  { status: 'draft', title: 'Brouillons (visibles par toi seul)' },
+  { status: 'draft', title: 'Brouillons, visibles par toi seul' },
   { status: 'finished', title: 'Terminés' },
   { status: 'archived', title: 'Archivés' },
 ]
@@ -27,7 +26,8 @@ export function TournamentsPage() {
   const admin = isAdmin(auth)
   const [tournaments, setTournaments] = useState<Tournament[] | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [creating, setCreating] = useState(false)
+  const [params] = useSearchParams()
+  const [creating, setCreating] = useState(admin && params.get('nouveau') === '1')
 
   const load = useCallback(async () => {
     try {
@@ -46,30 +46,32 @@ export function TournamentsPage() {
   if (auth.demoMode) {
     return (
       <section className="space-y-4">
-        <h1 className="text-2xl font-bold text-court">Tournois</h1>
+        <PageTitle>Tournois</PageTitle>
         <DemoModeNotice />
       </section>
     )
   }
 
+  const list = (status: TournamentStatus) => (tournaments ?? []).filter((t) => t.status === status)
+
   return (
-    <section className="space-y-5">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-court">Tournois</h1>
+    <section className="space-y-10">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <PageTitle className="lg:text-[120px]">Tournois</PageTitle>
         {admin && !creating && (
-          <div className="w-auto">
+          <div className="w-full sm:w-auto">
             <PrimaryButton type="button" onClick={() => setCreating(true)}>
-              + Nouveau
+              Créer un tournoi
             </PrimaryButton>
           </div>
         )}
       </div>
 
       {creating && (
-        <section className="space-y-3 rounded-2xl bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-court">Nouveau tournoi</h2>
-            <button type="button" className="text-sm text-ink/60 underline" onClick={() => setCreating(false)}>
+        <section className="space-y-4 border-2 border-black bg-mist p-5">
+          <div className="flex items-center justify-between gap-3">
+            <SectionTitle>Nouveau tournoi</SectionTitle>
+            <button type="button" className="min-h-11 text-[15px] font-semibold underline" onClick={() => setCreating(false)}>
               Annuler
             </button>
           </div>
@@ -86,45 +88,70 @@ export function TournamentsPage() {
 
       {error && <Notice tone="error">{error}</Notice>}
       {!tournaments ? (
-        <p className="text-ink/60">Chargement…</p>
+        <p>Chargement…</p>
       ) : tournaments.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-court/30 bg-white p-6 text-ink/70">
-          Aucun tournoi pour le moment. {admin ? 'Crée le premier avec « + Nouveau ».' : 'Reviens bientôt !'}
-        </div>
+        <p className="border-2 border-dashed border-black p-6 text-[17px]">
+          Aucun tournoi pour le moment. {admin ? 'Crée le premier avec « Créer un tournoi ».' : 'Reviens bientôt.'}
+        </p>
       ) : (
-        SECTIONS.map(({ status, title }) => {
-          const list = tournaments.filter((t) => t.status === status)
-          if (list.length === 0) return null
-          return (
-            <section key={status} className="space-y-2">
-              <h2 className="text-sm font-semibold tracking-wide text-ink/60 uppercase">{title}</h2>
-              <ul className="grid gap-3 sm:grid-cols-2">
-                {list.map((t) => (
-                  <li key={t.id}>
-                    <Link
-                      to={`/tournois/${t.id}`}
-                      className="flex items-center gap-3 rounded-2xl bg-white p-4 shadow-sm transition hover:shadow-md"
-                    >
-                      <span className="text-3xl" aria-hidden="true">
-                        {DISCIPLINE_ICONS[t.discipline]}
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block truncate font-bold text-court">{t.name}</span>
-                        <span className="block text-sm text-ink/60">
-                          {DISCIPLINE_LABELS[t.discipline]} · {FORMAT_LABELS[t.format]}
+        <>
+          {list('in_progress').length > 0 && (
+            <ul aria-label="Tournois en cours" className="grid gap-5 md:grid-cols-2">
+              {list('in_progress').map((t) => (
+                <li key={t.id}>
+                  <Poster tournament={t} />
+                </li>
+              ))}
+            </ul>
+          )}
+          {SECTIONS.filter((s) => s.status !== 'in_progress').map(({ status, title }) =>
+            list(status).length === 0 ? null : (
+              <section key={status} className="space-y-3.5">
+                <SectionTitle>{title}</SectionTitle>
+                <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {list(status).map((t) => (
+                    <li key={t.id}>
+                      <Link
+                        to={`/tournois/${t.id}`}
+                        className={`flex flex-col gap-1.5 border-2 border-black p-5 text-black hover:bg-mist ${
+                          status === 'archived' ? 'border-dashed text-muted' : ''
+                        } ${status === 'draft' ? 'bg-mist' : ''}`}
+                      >
+                        <span className="text-sm font-semibold">
+                          {DISCIPLINE_LABELS[t.discipline]}, {STATUS_LABELS[t.status].toLowerCase()}
                         </span>
-                        {status !== 'in_progress' && (
-                          <span className="text-xs text-ink/50">{STATUS_LABELS[t.status]}</span>
-                        )}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )
-        })
+                        <span className="font-display text-[32px] leading-none font-extrabold">{t.name}</span>
+                        <span className="text-[15px]">{FORMAT_LABELS[t.format]}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ),
+          )}
+        </>
       )}
     </section>
+  )
+}
+
+/** Affiche d'un tournoi en cours : mini-pong en noir, fléchettes en ocre. */
+function Poster({ tournament: t }: { tournament: Tournament }) {
+  return (
+    <Link
+      to={`/tournois/${t.id}`}
+      className={`group flex min-h-[260px] flex-col gap-4 p-6 text-white sm:min-h-[340px] sm:p-10 ${
+        t.discipline === 'mini_pong' ? 'bg-black' : 'bg-ochre'
+      }`}
+    >
+      <span className="flex justify-between gap-3 text-base font-semibold">
+        <span>{DISCIPLINE_LABELS[t.discipline]}</span>
+        <span className={t.discipline === 'mini_pong' ? 'text-ochre-light' : ''}>En cours</span>
+      </span>
+      <span className="mt-auto font-display text-[52px] leading-[0.86] font-black group-hover:underline group-hover:decoration-[3px] group-hover:underline-offset-[6px] sm:text-[80px]">
+        {t.name}
+      </span>
+      <span className="text-[17px]">{FORMAT_LABELS[t.format]}</span>
+    </Link>
   )
 }

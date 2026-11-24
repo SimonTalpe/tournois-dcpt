@@ -28,7 +28,7 @@ export function PlayerPage() {
   }, [playerId])
 
   if (auth.demoMode) return <DemoModeNotice />
-  if (name === undefined) return <p className="text-ink/60">Chargement…</p>
+  if (name === undefined) return <p className="text-muted">Chargement…</p>
   if (name === null) {
     return (
       <section className="space-y-3">
@@ -41,10 +41,10 @@ export function PlayerPage() {
   }
   return (
     <section className="space-y-6">
-      <button type="button" onClick={() => history.back()} className="text-sm text-ink/60 underline">
+      <button type="button" onClick={() => history.back()} className="text-sm text-muted underline">
         ← Retour
       </button>
-      <h1 className="text-2xl font-bold text-court">{name}</h1>
+      <h1 className="font-display text-[56px] leading-[0.9] font-black sm:text-[72px]">{name}</h1>
       <PlayerStatsView playerId={playerId} />
     </section>
   )

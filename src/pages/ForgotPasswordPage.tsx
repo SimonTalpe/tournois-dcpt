@@ -124,7 +124,7 @@ export function ForgotPasswordPage() {
           />
           {error && <Notice tone="error">{error}</Notice>}
           <PrimaryButton busy={busy}>Changer mon mot de passe</PrimaryButton>
-          <button type="button" onClick={() => sendCode()} className="w-full text-center text-sm text-court underline">
+          <button type="button" onClick={() => sendCode()} className="w-full text-center text-sm text-ochre-text underline">
             Renvoyer un code
           </button>
         </form>

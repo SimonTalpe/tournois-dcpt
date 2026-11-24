@@ -67,7 +67,7 @@ export function VerifyEmailPage() {
         />
         <PrimaryButton busy={busy}>Activer mon compte</PrimaryButton>
       </form>
-      <button type="button" onClick={handleResend} className="w-full text-center text-sm text-court underline">
+      <button type="button" onClick={handleResend} className="w-full text-center text-sm text-ochre-text underline">
         Je n'ai rien reçu : renvoyer un code
       </button>
     </AuthScreen>

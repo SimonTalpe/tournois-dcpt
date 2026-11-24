@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { DemoModeNotice, Notice, PrimaryButton, SecondaryButton, TextField } from '../components/ui.tsx'
+import { DemoModeNotice, Icon, Notice, PrimaryButton, SecondaryButton, TextField } from '../components/ui.tsx'
 import { useAuth } from '../features/auth/AuthContext.ts'
 import { playerIdForProfile, renameMe } from '../features/profile/api.ts'
 import { PlayerStatsView } from '../features/profile/PlayerStatsView.tsx'
@@ -11,6 +11,8 @@ export function ProfilePage() {
   const auth = useAuth()
   const { profile, session, demoMode } = auth
   const [playerId, setPlayerId] = useState<string | null | undefined>(undefined)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const navigate = useNavigate()
 
   const profileId = profile?.id
   useEffect(() => {
@@ -27,33 +29,70 @@ export function ProfilePage() {
   if (demoMode || !profile) {
     return (
       <section className="space-y-4">
-        <h1 className="text-2xl font-bold text-court">Mon profil</h1>
+        <h1 className="font-display text-[56px] leading-[0.9] font-black sm:text-[72px]">Mon profil</h1>
         <DemoModeNotice />
       </section>
     )
   }
 
   return (
-    <section className="space-y-6">
-      <section className="space-y-2 rounded-2xl bg-white p-4 shadow-sm">
-        <NameEditor />
-        <p className="text-sm break-all text-ink/70">{session?.user.email}</p>
-        <Link to="/nouveau-mot-de-passe" className="inline-block text-sm text-court underline">
-          Changer mon mot de passe
-        </Link>
-      </section>
+    <section className="space-y-8">
+      <div className="max-w-2xl border-[3px] border-black">
+        <div className="flex items-start justify-between gap-3 bg-ochre px-5 pt-5 pb-4 text-white sm:px-6">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold">Carte de joueur</p>
+            <h1 className="mt-1.5 font-display text-[56px] leading-[0.86] font-black break-words sm:text-[80px]">
+              {profile.full_name}
+            </h1>
+          </div>
+          <button
+            type="button"
+            aria-label="Réglages du compte"
+            aria-expanded={settingsOpen}
+            aria-controls="reglages"
+            onClick={() => setSettingsOpen((v) => !v)}
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center text-white hover:bg-ochre-text"
+          >
+            <Icon name="settings" />
+          </button>
+        </div>
+        <p className="border-t-2 border-black px-5 py-2.5 text-[15px] break-all sm:px-6">{session?.user.email}</p>
+      </div>
+
+      {settingsOpen && (
+        <section id="reglages" aria-labelledby="reglages-titre" className="max-w-2xl space-y-5 border-2 border-black p-5">
+          <h2 id="reglages-titre" className="font-display text-4xl leading-none font-black">
+            Réglages
+          </h2>
+          <NameEditor />
+          <div className="flex flex-wrap gap-3">
+            <Link
+              to="/nouveau-mot-de-passe"
+              className="inline-flex min-h-11 items-center border-2 border-black px-3.5 text-sm font-semibold hover:bg-black hover:text-white"
+            >
+              Changer mon mot de passe
+            </Link>
+            <SecondaryButton
+              onClick={() => {
+                void auth.signOut().then(() => navigate('/', { replace: true }))
+              }}
+            >
+              Se déconnecter
+            </SecondaryButton>
+          </div>
+          <DeleteAccount />
+        </section>
+      )}
 
       {playerId === undefined ? (
-        <p className="text-ink/60">Chargement…</p>
+        <p>Chargement…</p>
       ) : playerId === null ? (
-        <div className="rounded-2xl border border-dashed border-court/30 bg-white p-4 text-sm text-ink/70">
+        <p className="border-2 border-dashed border-black p-4 text-[15px]">
           Pas encore de match joué : ton Elo, ton historique et tes statistiques apparaîtront ici.
-        </div>
+        </p>
       ) : (
         <PlayerStatsView playerId={playerId} />
       )}
-
-      <DeleteAccount />
     </section>
   )
 }
@@ -86,7 +125,9 @@ function NameEditor() {
   if (!editing) {
     return (
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-bold text-court">{profile.full_name}</h1>
+        <p className="text-base">
+          Nom affiché : <strong>{profile.full_name}</strong>
+        </p>
         <SecondaryButton
           onClick={() => {
             setName(profile.full_name)
@@ -113,7 +154,7 @@ function NameEditor() {
         <div className="flex-1">
           <PrimaryButton busy={busy}>Enregistrer</PrimaryButton>
         </div>
-        <button type="button" className="text-sm text-ink/60 underline" onClick={() => setEditing(false)}>
+        <button type="button" className="text-sm text-muted underline" onClick={() => setEditing(false)}>
           Annuler
         </button>
       </div>
@@ -152,7 +193,7 @@ function DeleteAccount() {
         </SecondaryButton>
       ) : (
         <form className="space-y-3" onSubmit={handleDelete} noValidate>
-          <ul className="list-disc space-y-1 pl-5 text-sm text-ink/80">
+          <ul className="list-disc space-y-1 pl-5 text-sm text-muted">
             <li>Ton nom sera remplacé par « Joueur supprimé » dans les tableaux et l’historique (les résultats sont conservés).</li>
             <li>Tu ne pourras plus te connecter ; ton adresse email sera effacée du site.</li>
             <li>Si tu as encore des matchs à jouer, l’admin te remplacera ou te déclarera forfait.</li>
@@ -174,7 +215,7 @@ function DeleteAccount() {
             >
               {busy ? 'Suppression…' : 'Supprimer définitivement'}
             </button>
-            <button type="button" className="text-sm text-ink/60 underline" onClick={() => setOpen(false)}>
+            <button type="button" className="text-sm text-muted underline" onClick={() => setOpen(false)}>
               Annuler
             </button>
           </div>

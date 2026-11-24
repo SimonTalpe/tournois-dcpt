@@ -96,7 +96,7 @@ export function TiebreakDialog({ bundle, pool, group, existing, viewer, onClose,
         role="dialog"
         aria-modal="true"
         aria-labelledby="tiebreak-title"
-        className="max-h-[92vh] w-full max-w-md space-y-4 overflow-y-auto rounded-t-3xl bg-white p-5 shadow-xl sm:rounded-3xl"
+        className="max-h-[92vh] w-full max-w-md space-y-4 overflow-y-auto rounded-t-3xl bg-white p-5 border-t-4 border-black sm:border-2 sm:rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
         <header className="flex items-start justify-between gap-3">
@@ -104,7 +104,7 @@ export function TiebreakDialog({ bundle, pool, group, existing, viewer, onClose,
             <h2 id="tiebreak-title" className="text-lg font-bold text-court">
               Départage — Poule {pool.label}
             </h2>
-            <p className="text-sm text-ink/60">
+            <p className="text-sm text-muted">
               {isDarts
                 ? 'Partie de fléchettes à plusieurs entre les joueurs à égalité : saisis le classement complet.'
                 : "Égalité parfaite (victoires, confrontations, sets et points) : l'admin fixe le classement."}
@@ -139,14 +139,14 @@ export function TiebreakDialog({ bundle, pool, group, existing, viewer, onClose,
         </ol>
 
         {existing && (
-          <p className="text-xs text-ink/50">
+          <p className="text-xs text-muted">
             Saisi {existing.result_by && bundle.authors.get(existing.result_by) ? `par ${bundle.authors.get(existing.result_by)}` : ''}
             {existing.result_by_admin ? ' (admin)' : ''} à {timeFormat.format(new Date(existing.result_at))}
           </p>
         )}
         {!rights.canEdit && rights.reason && <Notice>{rights.reason}</Notice>}
         {rights.canEdit && rights.deadline && (
-          <p className="text-xs text-ink/60">Correction possible jusqu'à {timeFormat.format(rights.deadline)}.</p>
+          <p className="text-xs text-muted">Correction possible jusqu'à {timeFormat.format(rights.deadline)}.</p>
         )}
         {error && <Notice tone="error">{error}</Notice>}
         {isDarts && rights.canEdit && !existing && (
@@ -155,11 +155,11 @@ export function TiebreakDialog({ bundle, pool, group, existing, viewer, onClose,
               type="button"
               onClick={playWithCounter}
               disabled={busy}
-              className="w-full rounded-xl bg-ball px-4 py-3 font-semibold text-court shadow-sm transition active:scale-[0.98] disabled:opacity-60"
+              className="w-full rounded-xl bg-ochre px-4 py-3 font-semibold text-white transition active:scale-[0.98] disabled:opacity-60"
             >
-              🎯 Jouer le départage au compteur
+              Jouer le départage au compteur
             </button>
-            <p className="text-center text-xs text-ink/60">
+            <p className="text-center text-xs text-muted">
               Ordre de jeu tiré au sort, partie jouée jusqu'au bout. Ou enregistre le classement ci-dessus à la main.
             </p>
           </div>

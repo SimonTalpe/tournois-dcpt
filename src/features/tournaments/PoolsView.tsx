@@ -34,13 +34,13 @@ export function PoolsView({ bundle, highlightPlayerId, onOpenMatch, viewer, onSa
   const score = (m: Match) => {
     if (m.status === 'walkover') {
       return (
-        <span className="text-[10px] font-semibold text-clay uppercase" title={`Forfait de ${name(m.forfeit_player_id)}`}>
+        <span className="text-[10px] font-semibold text-clay" title={`Forfait de ${name(m.forfeit_player_id)}`}>
           forfait
         </span>
       )
     }
-    if (m.status === 'cancelled') return <span className="text-[10px] text-ink/40 uppercase">annulé</span>
-    if (m.status !== 'played') return <span className="text-xs text-ink/40">vs</span>
+    if (m.status === 'cancelled') return <span className="text-[10px] text-muted">annulé</span>
+    if (m.status !== 'played') return <span className="text-xs text-muted">vs</span>
     if (!isMiniPong) {
       const legs = dartLegsScore(m)
       if (legs) return <span className="font-semibold text-court tabular-nums">{`${legs.home}-${legs.away}`}</span>
@@ -50,7 +50,7 @@ export function PoolsView({ bundle, highlightPlayerId, onOpenMatch, viewer, onSa
     return <span className="font-semibold text-court tabular-nums">{`${won.home}-${won.away}`}</span>
   }
 
-  if (pools.length === 0) return <p className="text-sm text-ink/60">Les poules seront tirées au lancement du tournoi.</p>
+  if (pools.length === 0) return <p className="text-sm text-muted">Les poules seront tirées au lancement du tournoi.</p>
 
   const canTiebreak = (group: string[]) =>
     Boolean(
@@ -64,7 +64,7 @@ export function PoolsView({ bundle, highlightPlayerId, onOpenMatch, viewer, onSa
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-ink/60">
+      <p className="text-sm text-muted">
         {poolRound && <>Matchs de poule : {gameFormatLabel(tournament.discipline, poolRound)} · </>}
         {qualifiers} qualifié{qualifiers > 1 ? 's' : ''} par poule
         {isMiniPong
@@ -78,10 +78,10 @@ export function PoolsView({ bundle, highlightPlayerId, onOpenMatch, viewer, onSa
           const played = poolMatches.filter((m) => ['played', 'walkover', 'cancelled'].includes(m.status)).length
           const applied = tiebreaks.filter((t) => t.player_ids.every((id) => result.rows.find((r) => r.playerId === id)?.byTiebreak))
           return (
-            <section key={pool.id} className="space-y-3 rounded-2xl bg-white p-4 shadow-sm">
+            <section key={pool.id} className="space-y-3 rounded-2xl bg-white p-4 border-2 border-black">
               <div className="flex items-baseline justify-between gap-2">
                 <h3 className="text-lg font-bold text-court">Poule {pool.label}</h3>
-                <span className="text-xs text-ink/50">
+                <span className="text-xs text-muted">
                   {result.complete ? 'Terminée' : `${played}/${poolMatches.length} matchs joués · provisoire`}
                 </span>
               </div>
@@ -89,7 +89,7 @@ export function PoolsView({ bundle, highlightPlayerId, onOpenMatch, viewer, onSa
               <div className="-mx-1 overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-left text-xs text-ink/50">
+                    <tr className="text-left text-xs text-muted">
                       <th className="px-1 py-1 font-medium">#</th>
                       <th className="px-1 py-1 font-medium">Joueur</th>
                       <th className="px-1 py-1 text-center font-medium" title="Matchs joués">
@@ -124,7 +124,7 @@ export function PoolsView({ bundle, highlightPlayerId, onOpenMatch, viewer, onSa
                       return (
                         <tr
                           key={row.playerId}
-                          className={`border-t border-ink/10 ${row.playerId === highlightPlayerId ? 'bg-ball/40 font-semibold' : ''}`}
+                          className={`border-t border-black ${row.playerId === highlightPlayerId ? 'bg-ochre-tint font-semibold' : ''}`}
                         >
                           <td className="px-1 py-1.5 tabular-nums">{row.rank}</td>
                           <td className="max-w-0 px-1 py-1.5">
@@ -159,9 +159,9 @@ export function PoolsView({ bundle, highlightPlayerId, onOpenMatch, viewer, onSa
               </div>
 
               {result.pendingTies.map((group) => (
-                <div key={groupKey(group)} className="space-y-2 rounded-xl bg-ball/30 p-3 text-sm">
+                <div key={groupKey(group)} className="space-y-2 rounded-xl bg-ochre-tint p-3 text-sm">
                   <p>
-                    ⚖️ Égalité entre {group.map(name).join(', ')} pour la qualification :{' '}
+                    Égalité entre {group.map(name).join(', ')} pour la qualification :{' '}
                     {isMiniPong ? "l'admin doit fixer le classement." : 'partie de départage à plusieurs à jouer.'}
                   </p>
                   {canTiebreak(group) && (
@@ -170,7 +170,7 @@ export function PoolsView({ bundle, highlightPlayerId, onOpenMatch, viewer, onSa
                 </div>
               ))}
               {applied.map((t) => (
-                <p key={t.id} className="flex flex-wrap items-center gap-2 text-xs text-ink/60">
+                <p key={t.id} className="flex flex-wrap items-center gap-2 text-xs text-muted">
                   <span>
                     Départage {isMiniPong ? "fixé par l'admin" : 'par une partie à plusieurs'} :{' '}
                     {t.ranking.map((id, i) => `${i + 1}. ${name(id)}`).join(' · ')}
@@ -188,8 +188,8 @@ export function PoolsView({ bundle, highlightPlayerId, onOpenMatch, viewer, onSa
               ))}
 
               <div>
-                <h4 className="mb-1 text-xs font-semibold tracking-wide text-ink/50 uppercase">Matchs</h4>
-                <ul className="divide-y divide-ink/10 text-sm">
+                <h4 className="mb-1 text-xs font-semibold text-muted">Matchs</h4>
+                <ul className="divide-y divide-black text-sm">
                   {poolMatches.map((m) => {
                     const mine = highlightPlayerId && [m.home_player_id, m.away_player_id].includes(highlightPlayerId)
                     return (
@@ -198,7 +198,7 @@ export function PoolsView({ bundle, highlightPlayerId, onOpenMatch, viewer, onSa
                           type="button"
                           disabled={!onOpenMatch}
                           onClick={() => onOpenMatch?.(m.id)}
-                          className={`flex w-full items-center gap-2 rounded-lg px-1 py-1.5 text-left transition enabled:hover:bg-court/5 ${
+                          className={`flex w-full items-center gap-2 rounded-lg px-1 py-1.5 text-left transition enabled:hover:bg-mist ${
                             mine ? 'font-semibold' : ''
                           }`}
                         >
@@ -219,7 +219,7 @@ export function PoolsView({ bundle, highlightPlayerId, onOpenMatch, viewer, onSa
                           </span>
                         </button>
                         {m.status === 'pending' && (m.scheduled_at || m.location_id) && (
-                          <p className="pb-1 text-center text-[11px] text-ink/60">
+                          <p className="pb-1 text-center text-[11px] text-muted">
                             {[
                               m.scheduled_at && formatSchedule(m.scheduled_at),
                               bundle.locations.find((l) => l.id === m.location_id)?.name,
