@@ -48,8 +48,18 @@ const MESSAGES_BY_DB_ERROR: Record<string, string> = {
   ROUND_LOCKED: 'Un match de ce tour a déjà été joué : son format de jeu ne peut plus changer.',
   INVALID_TIEBREAK: 'Départage invalide : classe tous les joueurs à égalité de cette poule, chacun une seule fois.',
   POOL_NOT_FINISHED: 'Tous les matchs de poule ne sont pas encore joués.',
+  QUALIFICATION_NOT_FINISHED: 'La qualification n’est pas terminée : des joueurs sont encore en lice.',
+  QUALIFICATION_MIN_PLAYERS: 'Il faut au moins 6 joueurs pour le format à qualification.',
+  QUALIFICATION_REPLACE_LOCKED:
+    'Ce joueur a déjà un résultat de qualification : son bilan ne peut pas être transféré. Déclare-le plutôt forfait.',
+  ROUND_NOT_FINISHED: 'Le round en cours n’est pas terminé : tous ses matchs doivent être joués avant de créer le suivant.',
+  NOTHING_TO_PAIR: 'Aucun match à créer : la qualification est terminée ou tous les joueurs ont déjà un match.',
+  NOT_A_BYE: 'Ce match n’est pas une exemption de qualification.',
+  BYE_SWAP_NOT_ALLOWED:
+    'Exemption impossible à donner à ce joueur : il doit avoir le même bilan, un match du même round pas encore joué, et l’exempté actuel ne doit pas avoir joué depuis.',
+  QUALIFICATION_LOOP: 'Erreur inattendue dans la création des matchs de qualification. Préviens l’administrateur.',
   FINAL_PHASE_EXISTS:
-    'La phase finale est générée : les résultats de poule sont figés. Annule la phase finale (Gestion) pour les modifier.',
+    'La phase finale est générée : les résultats de poule et de qualification sont figés. Annule la phase finale (Gestion) pour les modifier.',
   SCHEDULE_LOCKED: 'Le résultat est saisi : lieu et horaire ne sont plus modifiables (sauf par l’admin).',
   SWAP_NOT_POSSIBLE: 'Inversion impossible : le match a déjà un résultat (ou est un exempt).',
   LAST_ADMIN: 'Tu es le seul admin : nomme un autre admin avant de supprimer ton compte.',

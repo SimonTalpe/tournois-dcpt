@@ -2,7 +2,9 @@ import type { BracketKind } from '../../lib/draw/types.ts'
 import type { SetScore } from '../../lib/scores.ts'
 
 export type Discipline = 'mini_pong' | 'darts'
-export type TournamentFormat = 'knockout' | 'pools_knockout'
+export type TournamentFormat = 'knockout' | 'pools_knockout' | 'qualification_knockout'
+export type QualificationPairing = 'continuous' | 'end_of_round' | 'manual'
+export type QualificationNextStage = 'preliminary' | 'groups' | 'none'
 export type TournamentStatus = 'draft' | 'in_progress' | 'finished' | 'archived'
 export type QualifierPlacement = 'classic' | 'random'
 export type MatchStatus = 'pending' | 'bye' | 'played' | 'walkover' | 'cancelled'
@@ -23,6 +25,14 @@ export type Tournament = {
   default_sets_to_win: number
   default_dart_start: number
   default_dart_double_out: boolean
+  /** Format à qualification : victoires pour se qualifier, défaites pour être éliminé, création des rounds. */
+  qualification_wins: number | null
+  qualification_losses: number | null
+  qualification_pairing: QualificationPairing | null
+  qualification_next_stage: QualificationNextStage | null
+  /** Parties à plusieurs (étape « groups ») : joueurs et qualifiés par partie. */
+  group_size: number | null
+  group_qualifiers: number | null
   launched_at: string | null
   created_at: string
 }
@@ -42,6 +52,12 @@ export type TournamentInput = Pick<
   | 'default_sets_to_win'
   | 'default_dart_start'
   | 'default_dart_double_out'
+  | 'qualification_wins'
+  | 'qualification_losses'
+  | 'qualification_pairing'
+  | 'qualification_next_stage'
+  | 'group_size'
+  | 'group_qualifiers'
 >
 
 /** Valeurs proposées à la création d'un tournoi. */
@@ -58,6 +74,27 @@ export const EMPTY_TOURNAMENT: TournamentInput = {
   default_sets_to_win: 2,
   default_dart_start: 301,
   default_dart_double_out: false,
+  qualification_wins: null,
+  qualification_losses: null,
+  qualification_pairing: null,
+  qualification_next_stage: null,
+  group_size: null,
+  group_qualifiers: null,
+}
+
+/** Réglages proposés quand l'admin choisit le format à qualification (décision du 24/11/2026). */
+export function qualificationDefaults(discipline: Discipline): Pick<
+  TournamentInput,
+  'qualification_wins' | 'qualification_losses' | 'qualification_pairing' | 'qualification_next_stage' | 'group_size' | 'group_qualifiers'
+> {
+  return {
+    qualification_wins: 1,
+    qualification_losses: 2,
+    qualification_pairing: 'continuous',
+    qualification_next_stage: discipline === 'darts' ? 'groups' : 'preliminary',
+    group_size: discipline === 'darts' ? 3 : null,
+    group_qualifiers: discipline === 'darts' ? 2 : null,
+  }
 }
 
 export type Player = { id: string; profile_id: string | null; full_name: string }
@@ -153,6 +190,19 @@ export const STATUS_LABELS: Record<TournamentStatus, string> = {
 export const FORMAT_LABELS: Record<TournamentFormat, string> = {
   knockout: 'Élimination directe',
   pools_knockout: 'Poules puis élimination directe',
+  qualification_knockout: 'Qualification puis élimination directe',
+}
+
+export const PAIRING_LABELS: Record<QualificationPairing, string> = {
+  continuous: 'Au fil de l’eau',
+  end_of_round: 'À la fin de chaque round',
+  manual: 'Par l’admin',
+}
+
+export const NEXT_STAGE_LABELS: Record<QualificationNextStage, string> = {
+  preliminary: 'Tour préliminaire avec exemptions',
+  groups: 'Parties à plusieurs',
+  none: 'Aucune',
 }
 
 /** Format de jeu d'un tour, en clair. */

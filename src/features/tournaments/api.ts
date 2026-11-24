@@ -31,7 +31,7 @@ function check<T>(result: { data: T; error: { code?: string; message?: string } 
 }
 
 export const TOURNAMENT_COLUMNS =
-  'id, name, description, discipline, format, status, pool_count, qualifiers_per_pool, qualifier_placement, third_place, consolation, default_sets_to_win, default_dart_start, default_dart_double_out, launched_at, created_at'
+  'id, name, description, discipline, format, status, pool_count, qualifiers_per_pool, qualifier_placement, third_place, consolation, default_sets_to_win, default_dart_start, default_dart_double_out, qualification_wins, qualification_losses, qualification_pairing, qualification_next_stage, group_size, group_qualifiers, launched_at, created_at'
 
 export const ROUND_COLUMNS = 'id, tournament_id, bracket, round_number, name, sets_to_win, dart_start, dart_double_out'
 
@@ -130,6 +130,12 @@ const INPUT_FIELDS = [
   'default_sets_to_win',
   'default_dart_start',
   'default_dart_double_out',
+  'qualification_wins',
+  'qualification_losses',
+  'qualification_pairing',
+  'qualification_next_stage',
+  'group_size',
+  'group_qualifiers',
 ] as const satisfies readonly (keyof TournamentInput)[]
 
 /**
@@ -141,7 +147,20 @@ export function pickTournamentInput(
   source: Partial<TournamentInput> & Record<string, unknown>,
   structureLocked = false,
 ): Partial<TournamentInput> {
-  const locked = new Set(['discipline', 'format', 'pool_count', 'qualifiers_per_pool', 'third_place', 'consolation'])
+  const locked = new Set([
+    'discipline',
+    'format',
+    'pool_count',
+    'qualifiers_per_pool',
+    'third_place',
+    'consolation',
+    'qualification_wins',
+    'qualification_losses',
+    'qualification_pairing',
+    'qualification_next_stage',
+    'group_size',
+    'group_qualifiers',
+  ])
   const result: Record<string, unknown> = {}
   for (const field of INPUT_FIELDS) {
     if (structureLocked && locked.has(field)) continue
@@ -277,6 +296,8 @@ export function drawConfigOf(t: Tournament): DrawConfig {
     qualifiersPerPool: t.qualifiers_per_pool,
     thirdPlace: t.third_place,
     consolation: t.consolation,
+    qualification:
+      t.qualification_wins && t.qualification_losses ? { wins: t.qualification_wins, losses: t.qualification_losses } : null,
   }
 }
 
@@ -347,6 +368,21 @@ export async function submitTiebreak(poolId: string, ranking: string[]): Promise
 
 export async function generateFinalPhase(tournamentId: string, draw: DrawResult): Promise<void> {
   check(await db().rpc('admin_generate_final_phase', { p_tournament_id: tournamentId, p_plan: draw.plan }))
+}
+
+/** Phase finale d'un tournoi avec qualification (classement des qualifiés calculé par le site). */
+export async function generateQualificationFinal(tournamentId: string, draw: DrawResult): Promise<void> {
+  check(await db().rpc('admin_generate_qualification_final', { p_tournament_id: tournamentId, p_plan: draw.plan }))
+}
+
+/** Qualification réglée « par l'admin » : crée le round suivant (round en cours terminé). Renvoie le nombre de matchs créés. */
+export async function createNextQualificationRound(tournamentId: string): Promise<number> {
+  return check(await db().rpc('admin_qualification_next_round', { p_tournament_id: tournamentId })) as number
+}
+
+/** Donne l'exemption d'un round de qualification à un autre joueur (même bilan, match du round pas encore joué). */
+export async function swapQualificationBye(byeMatchId: string, playerId: string): Promise<void> {
+  check(await db().rpc('admin_swap_qualification_bye', { p_match_id: byeMatchId, p_player_id: playerId }))
 }
 
 export async function resetFinalPhase(tournamentId: string): Promise<void> {

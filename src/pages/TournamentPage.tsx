@@ -6,6 +6,8 @@ import { isAdmin, useAuth } from '../features/auth/AuthContext.ts'
 import { loadTournament } from '../features/tournaments/api.ts'
 import { BracketView } from '../features/tournaments/BracketView.tsx'
 import { PoolsView } from '../features/tournaments/PoolsView.tsx'
+import { QualificationView } from '../features/tournaments/QualificationView.tsx'
+import { qualificationOutlook } from '../features/tournaments/qualification.ts'
 import { MatchDialog, type Viewer } from '../features/tournaments/MatchDialog.tsx'
 import { useLiveTournament, type LiveContext } from '../features/tournaments/useLiveTournament.ts'
 import { TournamentAdmin } from '../features/tournaments/TournamentAdmin.tsx'
@@ -16,7 +18,7 @@ import {
   type TournamentBundle,
 } from '../features/tournaments/types.ts'
 
-type Tab = 'tableau' | 'poules' | 'consolante' | 'joueurs' | 'gestion'
+type Tab = 'tableau' | 'poules' | 'qualification' | 'consolante' | 'joueurs' | 'gestion'
 
 export function TournamentPage() {
   const { tournamentId = '' } = useParams()
@@ -82,6 +84,7 @@ export function TournamentPage() {
 
   const { tournament, rounds, entries, players, pools } = bundle
   const hasPools = tournament.format === 'pools_knockout'
+  const hasQualification = tournament.format === 'qualification_knockout'
   const hasMain = rounds.some((r) => r.bracket === 'main')
   const hasConsolation = rounds.some((r) => r.bracket === 'consolation')
   const myPlayerId = [...players.values()].find((p) => p.profile_id && p.profile_id === auth.profile?.id)?.id ?? null
@@ -98,6 +101,7 @@ export function TournamentPage() {
     ...(tournament.status !== 'draft'
       ? [
           ...(hasPools ? [{ id: 'poules' as const, label: 'Poules' }] : []),
+          ...(hasQualification ? [{ id: 'qualification' as const, label: 'Qualification' }] : []),
           { id: 'tableau' as const, label: hasPools ? 'Phase finale' : 'Tableau' },
           ...(hasConsolation ? [{ id: 'consolante' as const, label: 'Consolante' }] : []),
           { id: 'joueurs' as const, label: `Joueurs (${entries.length})` },
@@ -106,7 +110,10 @@ export function TournamentPage() {
     ...(admin ? [{ id: 'gestion' as const, label: 'Gestion' }] : []),
   ]
   const requested = searchParams.get('onglet') as Tab | null
-  const tab: Tab = tabs.find((t) => t.id === requested)?.id ?? tabs[0]?.id ?? 'joueurs'
+  // Onglet par défaut : la phase en cours (tableau une fois la qualification terminée).
+  const defaultTab: Tab | undefined = hasQualification && hasMain ? 'tableau' : tabs[0]?.id
+  const tab: Tab = tabs.find((t) => t.id === requested)?.id ?? defaultTab ?? 'joueurs'
+  const outlook = hasQualification ? qualificationOutlook(bundle) : null
   const poolOf = new Map(pools.map((p) => [p.id, p.label]))
   const name = (id: string) => players.get(id)?.full_name ?? 'Joueur inconnu'
 
@@ -173,11 +180,23 @@ export function TournamentPage() {
           <BracketView bundle={bundle} bracket="main" highlightPlayerId={myPlayerId} onOpenMatch={setOpenMatchId} />
         ) : (
           <p className="border-2 border-dashed border-black p-4 text-[15px]">
-            La phase finale sera construite à la fin des poules : {tournament.qualifiers_per_pool} qualifié(s) par
-            poule, soit {(tournament.qualifiers_per_pool ?? 0) * (tournament.pool_count ?? 0)} joueurs, placés par{' '}
-            {tournament.qualifier_placement === 'classic' ? 'croisement classique' : 'tirage au sort'}.
+            {hasQualification && outlook ? (
+              <>
+                Le tableau final sera construit à la fin de la qualification : {outlook.qualifiers} qualifiés
+                {outlook.byes > 0 ? `, dont les ${outlook.byes} mieux classés exemptés du tour préliminaire` : ''}.
+              </>
+            ) : (
+              <>
+                La phase finale sera construite à la fin des poules : {tournament.qualifiers_per_pool} qualifié(s) par
+                poule, soit {(tournament.qualifiers_per_pool ?? 0) * (tournament.pool_count ?? 0)} joueurs, placés par{' '}
+                {tournament.qualifier_placement === 'classic' ? 'croisement classique' : 'tirage au sort'}.
+              </>
+            )}
           </p>
         ))}
+      {tab === 'qualification' && (
+        <QualificationView bundle={bundle} highlightPlayerId={myPlayerId} onOpenMatch={setOpenMatchId} />
+      )}
       {tab === 'poules' && (
         <PoolsView
           bundle={bundle}

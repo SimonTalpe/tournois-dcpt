@@ -107,7 +107,7 @@ export function resultRights(
   }
   if (match.status === 'walkover' || match.status === 'cancelled') return { canEdit: false, reason: null }
   if (match.poolLocked) {
-    return { canEdit: false, reason: 'Phase finale générée : les résultats de poule sont figés.' }
+    return { canEdit: false, reason: 'Phase finale générée : les résultats de poule et de qualification sont figés.' }
   }
   if (!['pending', 'played'].includes(match.status) || !match.homePlayerId || !match.awayPlayerId) {
     return { canEdit: false, reason: 'Les deux joueurs du match ne sont pas encore connus.' }

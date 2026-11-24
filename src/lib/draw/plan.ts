@@ -4,12 +4,17 @@ import { coinFlip, shuffle } from './random.ts'
 import type { DrawPlan, PlanMatch, PlanRound, Rng } from './types.ts'
 
 export type DrawConfig = {
-  format: 'knockout' | 'pools_knockout'
+  format: 'knockout' | 'pools_knockout' | 'qualification_knockout'
   poolCount: number | null
   qualifiersPerPool: number | null
   thirdPlace: boolean
   consolation: boolean
+  /** Format à qualification : victoires pour se qualifier, défaites pour être éliminé. */
+  qualification?: { wins: number; losses: number } | null
 }
+
+/** Nombre minimum de joueurs pour le format à qualification (décision du 24/11/2026). */
+export const QUALIFICATION_MIN_PLAYERS = 6
 
 export type DrawResult = {
   plan: DrawPlan
@@ -21,6 +26,12 @@ export type DrawResult = {
 export function validateDrawConfig(config: DrawConfig, playerCount: number): string | null {
   if (playerCount < 2) return 'Il faut au moins 2 joueurs.'
   if (config.format === 'knockout') return null
+  if (config.format === 'qualification_knockout') {
+    const { wins, losses } = config.qualification ?? { wins: 0, losses: 0 }
+    if (wins < 1 || wins > 3 || losses < 1 || losses > 3) return 'Indique de 1 à 3 victoires pour se qualifier et de 1 à 3 défaites pour être éliminé.'
+    if (playerCount < QUALIFICATION_MIN_PLAYERS) return `Il faut au moins ${QUALIFICATION_MIN_PLAYERS} joueurs pour ce format.`
+    return null
+  }
   const pools = config.poolCount ?? 0
   const qualifiers = config.qualifiersPerPool ?? 0
   if (pools < 1) return 'Indique le nombre de poules.'
@@ -34,7 +45,7 @@ export function validateDrawConfig(config: DrawConfig, playerCount: number): str
 }
 
 /** Tableau principal + options (3e place, consolante) à partir des participants rangés par tête de série. */
-function buildKnockoutPhase(
+export function buildKnockoutPhase(
   mainSeeds: readonly string[],
   options: { thirdPlace: boolean; consolation: 'first_round_losers' | readonly string[] | null },
   rng: Rng,
@@ -116,6 +127,11 @@ export function buildLaunchDraw(playerIds: readonly string[], config: DrawConfig
   const error = validateDrawConfig(config, playerIds.length)
   if (error) throw new Error(error)
   if (new Set(playerIds).size !== playerIds.length) throw new Error('Joueur inscrit en double')
+
+  if (config.format === 'qualification_knockout') {
+    const { wins, losses } = config.qualification as { wins: number; losses: number }
+    return { plan: buildQualificationLaunch(shuffle(playerIds, rng), wins, losses), notes: [] }
+  }
 
   if (config.format === 'knockout') {
     return buildKnockoutPhase(
@@ -255,4 +271,70 @@ export function buildFinalPhase(
     { thirdPlace: config.thirdPlace, consolation: config.consolation ? eliminated : null },
     rng,
   )
+}
+
+// ---------------------------------------------------------------------------
+// Format à qualification
+// ---------------------------------------------------------------------------
+
+/** Nom d'un round de qualification : « Round 1 », puis « Repêchage » quand 1 victoire suffit. */
+export function qualificationRoundName(roundNumber: number, wins: number, losses: number): string {
+  if (roundNumber === 1 || wins > 1) return `Round ${roundNumber}`
+  return losses > 2 ? `Repêchage ${roundNumber - 1}` : 'Repêchage'
+}
+
+/**
+ * Lancement : tous les rounds de qualification (V + D − 1 au plus), round 1 tiré au sort
+ * (joueurs déjà mélangés, appariés deux à deux ; nombre impair : le dernier est exempt).
+ * Les rounds suivants sont créés par la base au fil des résultats.
+ */
+export function buildQualificationLaunch(shuffledPlayerIds: readonly string[], wins: number, losses: number): DrawPlan {
+  const rounds: PlanRound[] = Array.from({ length: wins + losses - 1 }, (_, i) => ({
+    key: `qualification-${i + 1}`,
+    bracket: 'qualification' as const,
+    roundNumber: i + 1,
+    name: qualificationRoundName(i + 1, wins, losses),
+  }))
+  const matches: PlanMatch[] = []
+  for (let i = 0; i < shuffledPlayerIds.length; i += 2) {
+    const position = i / 2 + 1
+    const home = shuffledPlayerIds[i]
+    const away = shuffledPlayerIds[i + 1] ?? null
+    matches.push({
+      key: matchKey('qualification', 1, position),
+      roundKey: 'qualification-1',
+      poolLabel: null,
+      position,
+      home,
+      away,
+      status: away ? 'pending' : 'bye',
+      winner: away ? null : home,
+      next: null,
+      loserNext: null,
+    })
+  }
+  return { pools: [], rounds, matches }
+}
+
+/**
+ * Phase finale après la qualification, à partir des qualifiés classés (meilleur d'abord).
+ * - preliminary : têtes de série dans l'ordre du classement ; les mieux classés sont exemptés
+ *   du premier tour, alors appelé « Tour préliminaire ».
+ * - none : placement au tirage au sort (exempts répartis comme en élimination directe).
+ */
+export function buildQualificationFinal(
+  rankedQualified: readonly string[],
+  config: { nextStage: 'preliminary' | 'groups' | 'none'; thirdPlace: boolean },
+  rng: Rng = Math.random,
+): DrawResult {
+  if (rankedQualified.length < 2) throw new Error('Il faut au moins 2 qualifiés')
+  if (config.nextStage === 'groups') throw new Error('Les parties à plusieurs arrivent bientôt')
+  const seeds = config.nextStage === 'preliminary' ? [...rankedQualified] : shuffle(rankedQualified, rng)
+  const result = buildKnockoutPhase(seeds, { thirdPlace: config.thirdPlace, consolation: null }, rng)
+  const size = nextPowerOfTwo(rankedQualified.length)
+  if (config.nextStage === 'preliminary' && size !== rankedQualified.length && size > 2) {
+    const first = result.plan.rounds.find((r) => r.key === 'main-1') as PlanRound
+    first.name = 'Tour préliminaire'
+  }
+  return result
 }

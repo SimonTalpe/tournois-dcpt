@@ -17,6 +17,12 @@ const tournament: Tournament = {
   default_sets_to_win: 1,
   default_dart_start: 301,
   default_dart_double_out: false,
+  qualification_wins: null,
+  qualification_losses: null,
+  qualification_pairing: null,
+  qualification_next_stage: null,
+  group_size: null,
+  group_qualifiers: null,
   launched_at: null,
   created_at: '',
 }

@@ -36,6 +36,12 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
   const name = (id: string | null) => (id ? (players.get(id)?.full_name ?? 'Joueur inconnu') : 'À déterminer')
   const sideId = (side: Side) => (side === 'home' ? match.home_player_id : match.away_player_id)
 
+  // Résultats de poule ou de qualification figés une fois la phase finale générée.
+  const matchRound = rounds.find((r) => r.id === match.round_id)
+  const frozenByFinalPhase =
+    (Boolean(match.pool_id) || matchRound?.bracket === 'qualification') &&
+    rounds.some((r) => r.bracket === 'main' || r.bracket === 'third_place' || r.bracket === 'consolation')
+
   const rights = resultRights(
     {
       status: match.status,
@@ -44,7 +50,7 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
       resultBy: match.result_by,
       resultByAdmin: match.result_by_admin,
       resultFirstAt: match.result_first_at,
-      poolLocked: Boolean(match.pool_id) && rounds.some((r) => r.bracket !== 'pool'),
+      poolLocked: frozenByFinalPhase,
     },
     viewer,
     tournament.status,
@@ -148,7 +154,7 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
   const played = match.status === 'played'
   const decided = played || match.status === 'walkover'
   const canAct = viewer.isAdmin && ['in_progress', 'finished'].includes(tournament.status)
-  const poolLocked = Boolean(match.pool_id) && rounds.some((r) => r.bracket !== 'pool')
+  const poolLocked = frozenByFinalPhase
   const won = isDarts ? { home: match.home_legs ?? 0, away: match.away_legs ?? 0 } : setsWon(existingSets)
   const showDartLegs = isDarts && (match.home_legs ?? 0) + (match.away_legs ?? 0) > 1
   const author = match.result_by ? authors.get(match.result_by) : undefined
@@ -169,7 +175,7 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
         <header className="flex items-start justify-between gap-3">
           <div>
             <h2 id="match-dialog-title" className="text-lg font-bold text-court">
-              {number ? `Match M${number}` : pool ? `Poule ${pool.label}` : 'Match'}
+              {number ? `Match M${number}` : pool ? `Poule ${pool.label}` : round?.bracket === 'qualification' ? 'Qualification' : 'Match'}
             </h2>
             <p className="text-sm text-muted">
               {round?.bracket === 'pool' ? 'Poules' : round?.name}
