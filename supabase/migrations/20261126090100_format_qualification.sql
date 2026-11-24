@@ -450,14 +450,20 @@ security definer
 set search_path = ''
 as $$
 declare
-  v_players uuid[] := p_players;
   v_wins integer;
   v_losses integer;
+  -- Joueurs concernés et round à partir duquel leurs matchs sont à refaire (strictement après).
+  v_targets jsonb;
 begin
+  select coalesce(jsonb_agg(jsonb_build_object('player', x, 'after', p_round_number)), '[]')
+  into v_targets from unnest(p_players) x;
   if p_result_removed and cardinality(p_players) > 0 then
     select b.wins, b.losses into v_wins, v_losses
     from public.qualification_record_before(p_tournament_id, p_players[1], p_round_number) b;
-    select v_players || coalesce(array_agg(m.home_player_id), '{}') into v_players
+    -- Exempts donnés depuis dans un bilan que ces joueurs peuvent encore atteindre : l'exempt
+    -- et les matchs suivants de l'exempté sont à refaire.
+    select v_targets || coalesce(jsonb_agg(jsonb_build_object('player', m.home_player_id, 'after', r.round_number - 1)), '[]')
+    into v_targets
     from public.matches m
     join public.tournament_rounds r on r.id = m.round_id
     cross join lateral public.qualification_record_before(p_tournament_id, m.home_player_id, r.round_number) b
@@ -465,18 +471,20 @@ begin
       and m.status = 'bye' and b.wins >= v_wins and b.losses >= v_losses;
   end if;
   if exists (
-    select 1 from public.matches m join public.tournament_rounds r on r.id = m.round_id
-    where m.tournament_id = p_tournament_id and r.bracket::text = 'qualification' and r.round_number > p_round_number
-      and m.status in ('played', 'walkover')
-      and (m.home_player_id = any (v_players) or m.away_player_id = any (v_players))
+    select 1
+    from jsonb_array_elements(v_targets) t
+    join public.matches m on (t ->> 'player')::uuid in (m.home_player_id, m.away_player_id)
+    join public.tournament_rounds r on r.id = m.round_id
+    where m.tournament_id = p_tournament_id and r.bracket::text = 'qualification'
+      and r.round_number > (t ->> 'after')::integer and m.status in ('played', 'walkover')
   ) then
     raise exception 'NEXT_MATCH_PLAYED' using errcode = 'P0001';
   end if;
   delete from public.matches m
-  using public.tournament_rounds r
+  using public.tournament_rounds r, jsonb_array_elements(v_targets) t
   where r.id = m.round_id and m.tournament_id = p_tournament_id and r.bracket::text = 'qualification'
-    and r.round_number > p_round_number
-    and (m.home_player_id = any (v_players) or m.away_player_id = any (v_players));
+    and (t ->> 'player')::uuid in (m.home_player_id, m.away_player_id)
+    and r.round_number > (t ->> 'after')::integer;
 end;
 $$;
 
