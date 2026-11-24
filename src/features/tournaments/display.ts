@@ -1,7 +1,7 @@
 import type { BracketKind } from '../../lib/draw/types.ts'
 import type { Match, Round } from './types.ts'
 
-const BRACKET_ORDER: Record<BracketKind, number> = { pool: 0, main: 1, third_place: 2, consolation: 3 }
+const BRACKET_ORDER: Record<BracketKind, number> = { pool: 0, qualification: 1, main: 2, third_place: 3, consolation: 4 }
 
 /** Tours triés : poules, tableau principal, 3e place, consolante. */
 export function sortRounds(rounds: readonly Round[]): Round[] {
@@ -12,13 +12,13 @@ export function sortRounds(rounds: readonly Round[]): Round[] {
 
 /**
  * Numéros des matchs de tableau (« M1 », « M2 »…), dans l'ordre de lecture :
- * tableau principal tour par tour, puis 3e place, puis consolante. Les poules ne sont pas numérotées.
+ * tableau principal tour par tour, puis 3e place, puis consolante. Les poules et la qualification ne sont pas numérotées.
  */
 export function numberMatches(rounds: readonly Round[], matches: readonly Match[]): Map<string, number> {
   const numbers = new Map<string, number>()
   let next = 1
   for (const round of sortRounds(rounds)) {
-    if (round.bracket === 'pool') continue
+    if (round.bracket === 'pool' || round.bracket === 'qualification') continue
     const inRound = matches.filter((m) => m.round_id === round.id).sort((a, b) => a.position - b.position)
     for (const match of inRound) numbers.set(match.id, next++)
   }

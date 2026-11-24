@@ -4,7 +4,7 @@
  * Les clés (key) sont des identifiants lisibles, uniques dans le tournoi.
  */
 
-export type BracketKind = 'pool' | 'main' | 'third_place' | 'consolation'
+export type BracketKind = 'pool' | 'qualification' | 'main' | 'third_place' | 'consolation'
 export type Slot = 'home' | 'away'
 
 /** Générateur aléatoire : renvoie un nombre dans [0, 1[. Injectable pour les tests. */

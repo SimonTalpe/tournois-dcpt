@@ -117,13 +117,14 @@ export function tournamentFinish(
     consolationWon ? { ...f, label: `${f.label} · vainqueur de la consolante` } : f
 
   if (inMain.length === 0) {
+    const firstPhase = tournament.format === 'qualification_knockout' ? 'Qualification' : 'Phase de poules'
     if (mainRounds.length === 0) {
-      // Poules en cours (phase finale pas encore générée).
+      // Poules ou qualification en cours (phase finale pas encore générée).
       return finished
-        ? { label: 'Phase de poules', rank: 1000, final: true }
-        : { label: tournament.format === 'pools_knockout' ? 'Phase de poules en cours' : 'En cours', rank: null, final: false }
+        ? { label: firstPhase, rank: 1000, final: true }
+        : { label: tournament.format === 'knockout' ? 'En cours' : `${firstPhase} en cours`, rank: null, final: false }
     }
-    return withConsolation({ label: 'Phase de poules', rank: 1000, final: true })
+    return withConsolation({ label: firstPhase, rank: 1000, final: true })
   }
 
   const deepest = inMain[0]
@@ -161,7 +162,7 @@ export function playerHistory(data: PlayerHistoryData): TournamentHistory[] {
   const playerId = data.player.id
   const rounds = new Map(data.rounds.map((r) => [r.id, r]))
   const pools = new Map(data.pools.map((p) => [p.id, p]))
-  const order = { pool: 0, main: 1, third_place: 2, consolation: 3 } as const
+  const order = { pool: 0, qualification: 1, main: 2, third_place: 3, consolation: 4 } as const
   return [...data.tournaments]
     .sort((a, b) => (b.launched_at ?? b.created_at).localeCompare(a.launched_at ?? a.created_at))
     .map((tournament) => {

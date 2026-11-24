@@ -14,6 +14,8 @@ import { randomUUID } from 'node:crypto'
 import pg from 'pg'
 import { buildLaunchDraw, type DrawConfig } from '../src/lib/draw/plan.ts'
 import { poolStandings, computeFinalPhase } from '../src/features/tournaments/standings.ts'
+import { computeQualificationFinal, qualificationStandings } from '../src/features/tournaments/qualification.ts'
+import { expectedQualifierCount } from '../src/lib/qualification.ts'
 import type { Match, TournamentBundle, Tournament } from '../src/features/tournaments/types.ts'
 import { replayElo, type EloEvent } from '../src/features/ranking/elo.ts'
 
@@ -48,6 +50,10 @@ const stats = {
   tiebreaks: 0,
   finalPhases: 0,
   finalPhaseResets: 0,
+  qualificationTournaments: 0,
+  qualificationByes: 0,
+  qualificationRoundsByAdmin: 0,
+  qualificationByeSwaps: 0,
   refusals: 0,
   replacements: 0,
   walkovers: 0,
@@ -308,11 +314,58 @@ async function expectRefusal(promise: Promise<unknown>, code: string, label: str
   throw new Failure(`${label} : aucune erreur (attendu ${code})`)
 }
 
+/**
+ * Invariants de la qualification : un joueur n'a qu'un match à jouer à la fois, contre un joueur de même bilan ;
+ * personne ne dépasse les victoires ou défaites prévues ; au plus un exempt par bilan et par round.
+ */
+async function checkQualification(tournamentId: string, wins: number, losses: number, label: string) {
+  const records = await su<{ player_id: string; wins: number; losses: number }>(
+    `select player_id, wins, losses from public.qualification_records($1)`,
+    [tournamentId],
+  )
+  const recordOf = new Map(records.map((r) => [r.player_id, r]))
+  assert(records.every((r) => r.wins <= wins && r.losses <= losses && !(r.wins === wins && r.losses === losses)),
+    `${label} : bilan de qualification impossible`)
+  const pending = await su<{ home_player_id: string; away_player_id: string; round_number: number }>(
+    `select m.home_player_id, m.away_player_id, r.round_number from public.matches m
+     join public.tournament_rounds r on r.id = m.round_id
+     where m.tournament_id = $1 and r.bracket = 'qualification' and m.status = 'pending'`,
+    [tournamentId],
+  )
+  const busy = pending.flatMap((m) => [m.home_player_id, m.away_player_id])
+  assert(new Set(busy).size === busy.length, `${label} : un joueur a deux matchs de qualification à jouer`)
+  for (const m of pending) {
+    const a = recordOf.get(m.home_player_id)
+    const b = recordOf.get(m.away_player_id)
+    assert(a && b && a.wins === b.wins && a.losses === b.losses, `${label} : match entre joueurs de bilans différents`)
+    assert(a.wins + a.losses + 1 === m.round_number, `${label} : match rangé dans le mauvais round`)
+    assert(a.wins < wins && a.losses < losses, `${label} : joueur qualifié ou éliminé encore en match`)
+  }
+  const byes = await su<{ n: number }>(
+    `select count(*)::int as n from public.matches m join public.tournament_rounds r on r.id = m.round_id
+     where m.tournament_id = $1 and r.bracket = 'qualification' and m.status = 'bye'`,
+    [tournamentId],
+  )
+  stats.qualificationByes = Math.max(stats.qualificationByes, byes[0].n)
+}
+
 // ---------------------------------------------------------------- Un tournoi complet
 async function playTournament(index: number) {
+  // Journal des actions du tournoi (affiché avec SIMULATION_DEBUG=1 en cas d'échec).
+  const debugLog: string[] = []
+  const count = (key: keyof typeof stats) => {
+    stats[key]++
+    debugLog.push(key)
+  }
   const discipline = pick(['mini_pong', 'darts'] as const)
   const playerCount = 2 + Math.floor(rng() * 15) // 2 à 16
-  let format: DrawConfig['format'] = chance(0.5) && playerCount >= 4 ? 'pools_knockout' : 'knockout'
+  let format: DrawConfig['format'] =
+    playerCount >= 6 && chance(0.35) ? 'qualification_knockout' : chance(0.5) && playerCount >= 4 ? 'pools_knockout' : 'knockout'
+  const withQualification = format === 'qualification_knockout'
+  const qWins = 1 + Math.floor(rng() * 2)
+  const qLosses = 1 + Math.floor(rng() * 3)
+  const qPairing = pick(['continuous', 'end_of_round', 'manual'] as const)
+  const qStage = pick(['preliminary', 'none'] as const)
   let poolCount: number | null = null
   let qualifiers: number | null = null
   if (format === 'pools_knockout') {
@@ -330,7 +383,8 @@ async function playTournament(index: number) {
     poolCount,
     qualifiersPerPool: qualifiers,
     thirdPlace: chance(0.5),
-    consolation: chance(0.5),
+    consolation: !withQualification && chance(0.5),
+    qualification: withQualification ? { wins: qWins, losses: qLosses } : null,
   }
 
   // Participants : comptes (droits joueur réels) et noms seuls
@@ -348,8 +402,9 @@ async function playTournament(index: number) {
   const [{ id: tournamentId }] = await as<{ id: string }>(
     ADMIN,
     `insert into public.tournaments (name, discipline, format, pool_count, qualifiers_per_pool, qualifier_placement,
-       third_place, consolation, default_sets_to_win, default_dart_start, default_dart_double_out)
-     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) returning id`,
+       third_place, consolation, default_sets_to_win, default_dart_start, default_dart_double_out,
+       qualification_wins, qualification_losses, qualification_pairing, qualification_next_stage)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) returning id`,
     [
       `Simulation ${index}`,
       discipline,
@@ -362,14 +417,19 @@ async function playTournament(index: number) {
       1 + Math.floor(rng() * 3),
       pick([301, 501]),
       chance(0.5),
+      withQualification ? qWins : null,
+      withQualification ? qLosses : null,
+      withQualification ? qPairing : null,
+      withQualification ? qStage : null,
     ],
   )
+  if (withQualification) count('qualificationTournaments')
   for (const p of players) {
     await as(ADMIN, `insert into public.tournament_entries (tournament_id, player_id) values ($1, $2)`, [tournamentId, p])
   }
   const draw = buildLaunchDraw(players, config, rng)
   await as(ADMIN, `select public.admin_launch_tournament($1, $2::jsonb)`, [tournamentId, JSON.stringify(draw.plan)])
-  const label = `tournoi ${index} (${discipline}, ${playerCount} joueurs, ${format}${poolCount ? ` ${poolCount}×${qualifiers}` : ''}${config.thirdPlace ? ', 3e place' : ''}${config.consolation ? ', consolante' : ''})`
+  const label = `tournoi ${index} (${discipline}, ${playerCount} joueurs, ${format}${poolCount ? ` ${poolCount}×${qualifiers}` : ''}${withQualification ? ` ${qWins}V/${qLosses}D ${qPairing} ${qStage}` : ''}${config.thirdPlace ? ', 3e place' : ''}${config.consolation ? ', consolante' : ''})`
 
   let finalPhaseDone = format === 'knockout'
   let finalResetDone = false
@@ -377,6 +437,85 @@ async function playTournament(index: number) {
     const bundle = await loadBundle(tournamentId)
     const roundOf = new Map(bundle.rounds.map((r) => [r.id, r]))
     const playable = bundle.matches.filter((m) => m.status === 'pending' && m.home_player_id && m.away_player_id)
+    if (withQualification && !finalPhaseDone) await checkQualification(tournamentId, qWins, qLosses, label)
+
+    if (playable.length === 0 && withQualification && !finalPhaseDone) {
+      const standings = qualificationStandings(bundle)
+      assert(standings, `${label} : classement de qualification absent`)
+      if (!standings.complete) {
+        // Mode « par l'admin » : le round est fini, l'admin crée le suivant.
+        assert(qPairing === 'manual', `${label} : qualification bloquée sans match jouable (${qPairing})`)
+        const [{ admin_qualification_next_round: created }] = await as<{ admin_qualification_next_round: number }>(
+          ADMIN,
+          `select public.admin_qualification_next_round($1)`,
+          [tournamentId],
+        )
+        assert(created > 0, `${label} : round suivant vide`)
+        count('qualificationRoundsByAdmin')
+        continue
+      }
+      if (standings.qualified.length !== expectedQualifierCount(playerCount, qWins, qLosses) && process.env.SIMULATION_DEBUG) {
+        console.log(await su(`select r.round_number, m.position, m.status, m.home_player_id, m.away_player_id, m.winner_player_id
+          from public.matches m join public.tournament_rounds r on r.id = m.round_id where m.tournament_id = $1 order by 1, 2`, [tournamentId]))
+        console.log(debugLog.join('\n'))
+      }
+      assert(
+        standings.qualified.length === expectedQualifierCount(playerCount, qWins, qLosses),
+        `${label} : ${standings.qualified.length} qualifiés (attendu ${expectedQualifierCount(playerCount, qWins, qLosses)})`,
+      )
+      const qualificationMatch = bundle.matches.find((m) => roundOf.get(m.round_id)?.bracket === 'qualification' && m.status === 'played')
+      if (standings.qualified.length < 2) {
+        // Trop peu de qualifiés pour un tableau (réglages extrêmes) : rien de plus à jouer.
+        await expectRefusal(
+          as(ADMIN, `select public.admin_generate_qualification_final($1, $2::jsonb)`, [tournamentId, '{"pools":[],"rounds":[],"matches":[]}']),
+          'INVALID_PLAN',
+          label,
+        )
+        count('tournaments')
+        return label
+      }
+      const final = computeQualificationFinal(bundle)
+      assert(final.ok, `${label} : phase finale impossible (${final.ok ? '' : final.problems.join(' ; ')})`)
+      await as(ADMIN, `select public.admin_generate_qualification_final($1, $2::jsonb)`, [tournamentId, JSON.stringify(final.draw.plan)])
+      count('finalPhases')
+      if (!finalResetDone && chance(0.33)) {
+        await as(ADMIN, `select public.admin_reset_final_phase($1)`, [tournamentId])
+        await as(ADMIN, `select public.admin_generate_qualification_final($1, $2::jsonb)`, [tournamentId, JSON.stringify(final.draw.plan)])
+        finalResetDone = true
+        count('finalPhaseResets')
+      }
+      if (qualificationMatch) {
+        await expectRefusal(as(ADMIN, `select public.clear_match_result($1)`, [qualificationMatch.id]), 'FINAL_PHASE_EXISTS', label)
+      }
+      finalPhaseDone = true
+      continue
+    }
+
+    // Qualification : parfois, l'admin donne l'exemption à un autre joueur de même bilan.
+    if (withQualification && !finalPhaseDone && chance(0.05)) {
+      const swap = await su<{ bye_id: string; player_id: string }>(
+        `select b.id as bye_id, x.player_id
+         from public.matches b
+         join public.tournament_rounds r on r.id = b.round_id and r.bracket = 'qualification'
+         join public.matches o on o.round_id = b.round_id and o.status = 'pending'
+         cross join lateral (values (o.home_player_id), (o.away_player_id)) x (player_id)
+         join public.qualification_records($1) qa on qa.player_id = b.home_player_id
+         join public.qualification_records($1) qb on qb.player_id = x.player_id
+         where b.tournament_id = $1 and b.status = 'bye' and qa.wins - 1 = qb.wins and qa.losses = qb.losses
+           and not exists (select 1 from public.matches l join public.tournament_rounds lr on lr.id = l.round_id
+                           where l.tournament_id = $1 and lr.bracket = 'qualification' and lr.round_number > r.round_number
+                             and b.home_player_id in (l.home_player_id, l.away_player_id))
+         limit 1`,
+        [tournamentId],
+      )
+      if (swap.length) {
+        await as(ADMIN, `select public.admin_swap_qualification_bye($1, $2)`, [swap[0].bye_id, swap[0].player_id])
+        const [after] = await su<Match>(`select * from public.matches where id = $1`, [swap[0].bye_id])
+        assert(after.home_player_id === swap[0].player_id && after.winner_player_id === swap[0].player_id, `${label} : exempt mal échangé`)
+        count('qualificationByeSwaps')
+        continue
+      }
+    }
 
     if (playable.length === 0) {
       if (finalPhaseDone) break
@@ -404,23 +543,23 @@ async function playTournament(index: number) {
               'TIEBREAK_ALREADY_SET',
               label,
             )
-            stats.dartTiebreaksByCounter++
+            count('dartTiebreaksByCounter')
           } else {
             await as(actor, `select public.submit_pool_tiebreak($1, $2::uuid[])`, [pool.id, ranking])
           }
-          stats.tiebreaks++
+          count('tiebreaks')
         }
       }
       const final = computeFinalPhase(await loadBundle(tournamentId))
       assert(final.ok, `${label} : phase finale impossible (${final.ok ? '' : final.problems.join(' ; ')})`)
       await as(ADMIN, `select public.admin_generate_final_phase($1, $2::jsonb)`, [tournamentId, JSON.stringify(final.draw.plan)])
-      stats.finalPhases++
+      count('finalPhases')
       // Une fois sur trois : annulation puis nouvelle génération (aucun match de la phase finale n'est joué).
       if (!finalResetDone && chance(0.33)) {
         await as(ADMIN, `select public.admin_reset_final_phase($1)`, [tournamentId])
         await as(ADMIN, `select public.admin_generate_final_phase($1, $2::jsonb)`, [tournamentId, JSON.stringify(final.draw.plan)])
         finalResetDone = true
-        stats.finalPhaseResets++
+        count('finalPhaseResets')
       }
       // Résultats de poule figés
       const poolMatch = bundle.matches.find((m) => m.pool_id && m.status === 'played')
@@ -444,7 +583,7 @@ async function playTournament(index: number) {
         `2027-02-0${day} ${time}:00 Europe/Paris`,
         locationId,
       ])
-      stats.schedules++
+      count('schedules')
     }
     // Forfait (admin) sur un match en attente d'un adversaire : qualifié d'office à son arrivée.
     const waiting = bundle.matches.filter(
@@ -453,7 +592,7 @@ async function playTournament(index: number) {
     if (waiting.length && chance(0.04)) {
       const w = pick(waiting)
       await as(ADMIN, `select public.admin_set_walkover($1, $2)`, [w.id, w.home_player_id ?? w.away_player_id])
-      stats.walkoversAwaitingOpponent++
+      count('walkoversAwaitingOpponent')
       continue
     }
     // Forfait d'un joueur sur tous ses matchs non joués (compte désactivé non remplacé).
@@ -470,7 +609,7 @@ async function playTournament(index: number) {
         [tournamentId, forfeiter],
       )
       assert(left.length === 0, 'forfait global : il reste des matchs à jouer')
-      stats.playerForfeits++
+      count('playerForfeits')
       continue
     }
     // Forfait d'un joueur sur ce match, ou annulation (poules), puis parfois rétablissement.
@@ -478,15 +617,15 @@ async function playTournament(index: number) {
       const cancel = Boolean(match.pool_id) && chance(0.4)
       if (cancel) {
         await as(ADMIN, `select public.admin_cancel_match($1)`, [match.id])
-        stats.cancellations++
+        count('cancellations')
       } else {
         await as(ADMIN, `select public.admin_set_walkover($1, $2)`, [match.id, pick([match.home_player_id, match.away_player_id])])
-        stats.walkovers++
+        count('walkovers')
         await checkAdvancement(match.id)
       }
       if (chance(0.25)) {
         await as(ADMIN, `select public.admin_reopen_match($1)`, [match.id])
-        stats.reopenings++
+        count('reopenings')
       }
       continue
     }
@@ -497,15 +636,31 @@ async function playTournament(index: number) {
       const [fresh] = await as<{ id: string }>(ADMIN, `insert into public.players (full_name) values ($1) returning id`, [
         `Remplaçant ${index}-${guard}`,
       ])
+      if (round.bracket === 'qualification') {
+        const results = await su(
+          `select 1 from public.matches m join public.tournament_rounds r on r.id = m.round_id
+           where m.tournament_id = $1 and r.bracket = 'qualification' and m.status in ('played', 'walkover', 'bye')
+             and $2 in (m.home_player_id, m.away_player_id)`,
+          [tournamentId, replaced],
+        )
+        if (results.length) {
+          await expectRefusal(
+            as(ADMIN, `select public.admin_replace_player($1, $2, $3)`, [tournamentId, replaced, fresh.id]),
+            'QUALIFICATION_REPLACE_LOCKED',
+            label,
+          )
+          continue
+        }
+      }
       await as(ADMIN, `select public.admin_replace_player($1, $2, $3)`, [tournamentId, replaced, fresh.id])
       const [after] = await su<Match>(`select * from public.matches where id = $1`, [match.id])
       assert([after.home_player_id, after.away_player_id].includes(fresh.id), 'remplacement : remplaçant absent du match')
-      stats.replacements++
+      count('replacements')
       continue
     }
     if (chance(0.1)) {
       await as(ADMIN, `select public.admin_swap_home_away($1)`, [match.id])
-      stats.swaps++
+      count('swaps')
       continue
     }
 
@@ -527,7 +682,7 @@ async function playTournament(index: number) {
     const byCounter = discipline === 'darts' && chance(0.4)
     if (byCounter) {
       const legs = await submitByCounter(actor, match, round, homeWins)
-      stats.dartMatchesByCounter++
+      count('dartMatchesByCounter')
       // Second téléphone sur le même match : le premier résultat validé est conservé.
       const other = actorFor(match)
       await expectRefusal(
@@ -541,21 +696,21 @@ async function playTournament(index: number) {
     } else {
       await submit(actor, match, discipline, round.sets_to_win, homeWins)
     }
-    if (actor === ADMIN) stats.byAdmin++
-    else stats.byPlayer++
-    stats.matches++
+    if (actor === ADMIN) count('byAdmin')
+    else count('byPlayer')
+    count('matches')
     await checkAdvancement(match.id)
 
     // Correction immédiate par l'auteur (vainqueur inversé), ou effacement puis nouvelle saisie.
     if (chance(0.12)) {
       await submit(actor, match, discipline, round.sets_to_win, !homeWins)
-      stats.corrections++
+      count('corrections')
       await checkAdvancement(match.id)
       const linked = await su(`select 1 from public.dart_games where match_id = $1`, [match.id])
       assert(linked.length === 0, 'correction manuelle : manches du compteur restées liées au match')
     } else if (chance(0.05)) {
       await as(actor, `select public.clear_match_result($1)`, [match.id])
-      stats.clears++
+      count('clears')
       const [cleared] = await su<Match>(`select * from public.matches where id = $1`, [match.id])
       assert(cleared.status === 'pending' && !cleared.winner_player_id, 'effacement incomplet')
       if (cleared.next_match_id) {
@@ -616,7 +771,12 @@ async function playTournament(index: number) {
       .flatMap((x) => [x.home_player_id, x.away_player_id])
       .filter(Boolean),
   )
-  const expected = format === 'knockout' ? playerCount : (poolCount as number) * (qualifiers as number)
+  const expected =
+    format === 'knockout'
+      ? playerCount
+      : withQualification
+        ? expectedQualifierCount(playerCount, qWins, qLosses)
+        : (poolCount as number) * (qualifiers as number)
   assert(mainPlayers.size === expected, `${label} : ${mainPlayers.size} joueurs au 1er tour du tableau principal (attendu ${expected})`)
   // Classements de poule : chaque match de poule joué compte pour au moins un joueur classé ;
   // le total des victoires des joueurs classés = matchs joués moins les victoires de joueurs remplacés.
@@ -656,7 +816,7 @@ async function playTournament(index: number) {
       label,
     )
   }
-  stats.tournaments++
+  count('tournaments')
   return label
 }
 
