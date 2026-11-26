@@ -1,21 +1,37 @@
 /**
  * Horaires des matchs : du lundi au vendredi, par tranches de 15 minutes, toujours en heure de Paris
- * (quel que soit le fuseau de l'appareil). La base applique les mêmes règles (contrainte matches_schedule_slot).
+ * (quel que soit le fuseau de l'appareil), sur deux plages : 12:00–13:30 et 17:30–19:00 (bornes incluses).
+ * La base applique les mêmes règles (contrainte matches_schedule_slot, fonction set_match_schedule).
  */
 
 export const TIME_ZONE = 'Europe/Paris'
-/** Créneaux proposés dans le formulaire. */
-export const FIRST_SLOT = '08:00'
-export const LAST_SLOT = '19:45'
+/** Plages horaires autorisées (début et fin inclus). */
+export const SLOT_RANGES: ReadonlyArray<readonly [string, string]> = [
+  ['12:00', '13:30'],
+  ['17:30', '19:00'],
+]
 
-/** Créneaux de 15 minutes entre `first` et `last` inclus (« 08:00 », « 08:15 »…). */
-export function timeSlots(first = FIRST_SLOT, last = LAST_SLOT): string[] {
+/** Plages en clair : « 12:00–13:30 ou 17:30–19:00 ». */
+export const SLOT_RANGES_LABEL = SLOT_RANGES.map(([a, b]) => `${a}–${b}`).join(' ou ')
+
+/** Créneaux de 15 minutes entre `first` et `last` inclus (« 12:00 », « 12:15 »…). */
+export function rangeSlots(first: string, last: string): string[] {
   const toMinutes = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5))
   const slots: string[] = []
   for (let m = toMinutes(first); m <= toMinutes(last); m += 15) {
     slots.push(`${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`)
   }
   return slots
+}
+
+/** Créneaux proposés dans le formulaire : toutes les plages autorisées. */
+export function timeSlots(): string[] {
+  return SLOT_RANGES.flatMap(([first, last]) => rangeSlots(first, last))
+}
+
+/** « 12:45 » fait-il partie d'une plage autorisée ? */
+export function isAllowedSlot(time: string): boolean {
+  return timeSlots().includes(time)
 }
 
 /** « 2026-12-02 » est-il un jour du lundi au vendredi ? */
@@ -63,12 +79,18 @@ export function formatSchedule(iso: string): string {
   return `${dayFormat.format(new Date(iso))} · ${toParisParts(iso).time}`
 }
 
-/** Erreur de saisie d'un horaire (date + heure), ou null. Les deux vides = pas d'horaire. */
-export function checkSchedule(date: string, time: string): string | null {
+/**
+ * Erreur de saisie d'un horaire (date + heure), ou null. Les deux vides = pas d'horaire.
+ * `current` : horaire déjà enregistré ; le conserver tel quel reste possible même hors des plages
+ * (horaires fixés avant leur mise en place).
+ */
+export function checkSchedule(date: string, time: string, current?: { date: string; time: string }): string | null {
   if (!date && !time) return null
   if (!date || !time) return 'Indique le jour et l’heure (ou aucun des deux).'
   if (!isWeekday(date)) return 'Les matchs se jouent du lundi au vendredi.'
   if (!/^\d{2}:(00|15|30|45)$/.test(time)) return 'Choisis une heure par tranche de 15 minutes.'
+  const unchanged = current !== undefined && current.date === date && current.time === time
+  if (!unchanged && !isAllowedSlot(time)) return `Les matchs se jouent entre ${SLOT_RANGES_LABEL}.`
   return null
 }
 

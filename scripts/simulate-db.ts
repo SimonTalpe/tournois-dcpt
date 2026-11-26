@@ -16,6 +16,7 @@ import { buildLaunchDraw, type DrawConfig } from '../src/lib/draw/plan.ts'
 import { poolStandings, computeFinalPhase } from '../src/features/tournaments/standings.ts'
 import { computeQualificationFinal, qualificationStandings } from '../src/features/tournaments/qualification.ts'
 import { expectedQualifierCount } from '../src/lib/qualification.ts'
+import { timeSlots } from '../src/lib/schedule.ts'
 import type { Match, TournamentBundle, Tournament } from '../src/features/tournaments/types.ts'
 import { replayElo, type EloEvent } from '../src/features/ranking/elo.ts'
 
@@ -577,7 +578,7 @@ async function playTournament(index: number) {
     // Au passage : lieu/horaire proposé par un joueur, inversion domicile/extérieur par l'admin.
     if (chance(0.2)) {
       const day = 1 + Math.floor(rng() * 5) // 1er au 5 février 2027 : lundi → vendredi
-      const time = `${String(8 + Math.floor(rng() * 11)).padStart(2, '0')}:${pick(['00', '15', '30', '45'])}`
+      const time = pick(timeSlots())
       await as(actorFor(match), `select public.set_match_schedule($1, $2::timestamptz, $3)`, [
         match.id,
         `2027-02-0${day} ${time}:00 Europe/Paris`,

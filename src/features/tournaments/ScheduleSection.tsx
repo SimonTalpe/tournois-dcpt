@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Notice, SecondaryButton } from '../../components/ui.tsx'
-import { checkSchedule, formatSchedule, parisToIso, timeSlots, toParisParts } from '../../lib/schedule.ts'
+import { SLOT_RANGES_LABEL, checkSchedule, formatSchedule, parisToIso, timeSlots, toParisParts } from '../../lib/schedule.ts'
 import { setSchedule } from './api.ts'
 import type { Location, Match } from './types.ts'
 
@@ -26,7 +26,7 @@ export function ScheduleSection({ match, locations, canEdit, onSaved }: Props) {
   const locationName = locations.find((l) => l.id === match.location_id)?.name
 
   async function save(clear = false) {
-    const problem = clear ? null : checkSchedule(date, time)
+    const problem = clear ? null : checkSchedule(date, time, current)
     if (problem) return setError(problem)
     setBusy(true)
     setError(null)
@@ -67,7 +67,7 @@ export function ScheduleSection({ match, locations, canEdit, onSaved }: Props) {
       {summary}
       {editing && (
         <div className="space-y-2 rounded-xl bg-chalk p-3">
-          <p className="text-xs text-muted">Du lundi au vendredi, par tranches de 15 minutes. Ton adversaire peut aussi modifier.</p>
+          <p className="text-xs text-muted">Du lundi au vendredi, entre {SLOT_RANGES_LABEL}. Ton adversaire peut aussi modifier.</p>
           <div className="grid grid-cols-2 gap-2">
             <label className="space-y-1 text-sm">
               <span className="block font-medium">Jour</span>

@@ -1,13 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { canSchedule, checkSchedule, formatSchedule, isWeekday, parisToIso, timeSlots, toParisParts } from './schedule.ts'
+import { canSchedule, checkSchedule, isAllowedSlot, formatSchedule, isWeekday, parisToIso, timeSlots, toParisParts } from './schedule.ts'
 
 describe('horaires des matchs', () => {
-  it('propose des créneaux de 15 minutes', () => {
-    const slots = timeSlots()
-    expect(slots[0]).toBe('08:00')
-    expect(slots[1]).toBe('08:15')
-    expect(slots.at(-1)).toBe('19:45')
-    expect(slots).toHaveLength(48)
+  it('propose des créneaux de 15 minutes sur 12:00–13:30 et 17:30–19:00', () => {
+    expect(timeSlots()).toEqual([
+      '12:00', '12:15', '12:30', '12:45', '13:00', '13:15', '13:30',
+      '17:30', '17:45', '18:00', '18:15', '18:30', '18:45', '19:00',
+    ])
+    expect(isAllowedSlot('13:30')).toBe(true)
+    expect(isAllowedSlot('13:45')).toBe(false)
+    expect(isAllowedSlot('17:15')).toBe(false)
+    expect(isAllowedSlot('19:15')).toBe(false)
   })
 
   it('reconnaît les jours de semaine', () => {
@@ -34,6 +37,13 @@ describe('horaires des matchs', () => {
     expect(checkSchedule('2026-12-02', '')).toMatch(/jour et l’heure/)
     expect(checkSchedule('2026-12-05', '12:30')).toMatch(/lundi au vendredi/)
     expect(checkSchedule('2026-12-02', '12:20')).toMatch(/15 minutes/)
+    expect(checkSchedule('2026-12-02', '19:00')).toBeNull()
+    expect(checkSchedule('2026-12-02', '08:00')).toMatch(/12:00–13:30 ou 17:30–19:00/)
+    expect(checkSchedule('2026-12-02', '14:00')).toMatch(/12:00–13:30 ou 17:30–19:00/)
+    // Horaire hors plages déjà enregistré : conservé tel quel, mais pas déplacé hors plages.
+    const old = { date: '2026-12-02', time: '08:00' }
+    expect(checkSchedule('2026-12-02', '08:00', old)).toBeNull()
+    expect(checkSchedule('2026-12-03', '08:00', old)).toMatch(/12:00–13:30/)
   })
 })
 
