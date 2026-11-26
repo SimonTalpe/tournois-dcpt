@@ -96,7 +96,7 @@ export function TournamentsPage() {
       ) : (
         <>
           {list('in_progress').length > 0 && (
-            <ul aria-label="Tournois en cours" className="grid gap-5 md:grid-cols-2">
+            <ul aria-label="Tournois en cours" className="grid grid-cols-1 gap-5 md:grid-cols-2">
               {list('in_progress').map((t) => (
                 <li key={t.id}>
                   <Poster tournament={t} />
@@ -108,7 +108,7 @@ export function TournamentsPage() {
             list(status).length === 0 ? null : (
               <section key={status} className="space-y-3.5">
                 <SectionTitle>{title}</SectionTitle>
-                <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {list(status).map((t) => (
                     <li key={t.id}>
                       <Link

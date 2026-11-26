@@ -72,7 +72,7 @@ export function PoolsView({ bundle, highlightPlayerId, onOpenMatch, viewer, onSa
           ? ' · égalité : confrontation directe, puis différence de sets, puis de points'
           : ' · égalité : différence de manches, puis partie de départage à plusieurs'}
       </p>
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {standings.map(({ pool, result, tiebreaks }) => {
           const poolMatches = matches.filter((m) => m.pool_id === pool.id).sort((a, b) => a.position - b.position)
           const decided = result.complete && result.pendingTies.length === 0
