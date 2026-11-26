@@ -120,7 +120,7 @@ export function HomePage() {
 
   return (
     <div className="space-y-10">
-      <section className="grid items-end gap-8 border-b-4 border-black pb-8 lg:grid-cols-[minmax(0,1fr)_minmax(280px,380px)]">
+      <section className="grid grid-cols-1 items-end gap-8 border-b-4 border-black pb-8 lg:grid-cols-[minmax(0,1fr)_minmax(280px,380px)]">
         <div>
           <h1 className="font-display text-[64px] leading-[0.86] font-black sm:text-[96px] lg:text-[136px]">
             {weekday}
@@ -158,7 +158,7 @@ export function HomePage() {
       )}
 
       {data && (
-        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3">
           {data.announcements.length > 0 && (
             <HomeBlock title="Annonces" more={{ to: '/annonces', label: 'Toutes les annonces' }}>
               <ul className="space-y-4">
@@ -292,7 +292,7 @@ function NextMatchBox({ item }: { item: ProgramItem }) {
 /** Bloc gris réservé à l'admin. */
 function AdminBox({ toSchedule }: { toSchedule: number }) {
   return (
-    <section aria-labelledby="a-regler" className="grid gap-6 bg-mist p-5 sm:p-8 lg:grid-cols-[minmax(0,2fr)_minmax(240px,1fr)]">
+    <section aria-labelledby="a-regler" className="grid grid-cols-1 gap-6 bg-mist p-5 sm:p-8 lg:grid-cols-[minmax(0,2fr)_minmax(240px,1fr)]">
       <div>
         <SectionTitle id="a-regler" className="mb-3">
           À régler

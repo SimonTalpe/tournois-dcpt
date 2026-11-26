@@ -229,7 +229,7 @@ export function TournamentPage() {
         />
       )}
       {tab === 'joueurs' && (
-        <ul className="grid border-t-2 border-black sm:grid-cols-2 sm:gap-x-8">
+        <ul className="grid grid-cols-1 border-t-2 border-black sm:grid-cols-2 sm:gap-x-8">
           {[...entries]
             .sort((a, b) => name(a.player_id).localeCompare(name(b.player_id), 'fr'))
             .map((e) => (

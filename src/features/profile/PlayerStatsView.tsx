@@ -99,7 +99,7 @@ export function PlayerStatsView({ playerId }: { playerId: string }) {
       {elo.length > 0 && (
         <section className="space-y-2">
           <h2 className="font-display text-[30px] leading-none font-extrabold">Elo</h2>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {elo.map((card) => (
               <EloCardView key={card.discipline} card={card} />
             ))}
@@ -110,7 +110,7 @@ export function PlayerStatsView({ playerId }: { playerId: string }) {
       {stats.length > 0 && (
         <section className="space-y-2">
           <h2 className="font-display text-[30px] leading-none font-extrabold">Statistiques en tournoi</h2>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {stats.map((s) => (
               <article key={s.discipline} className="space-y-3 border-2 border-black p-4">
                 <h3 className="flex items-center gap-2 text-base font-bold">

@@ -67,7 +67,8 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Un mot très long (adresse web, nom sans espace) passe à la ligne au lieu d'élargir la page sur mobile. */
+/* Un mot très long (adresse web, nom sans espace) passe à la ligne au lieu d'élargir la page sur mobile.
+   Les grilles utilisent grid-cols-1 (minmax(0, 1fr)) : un texte tronqué n'élargit pas la colonne. */
 main {
   overflow-wrap: anywhere;
 }

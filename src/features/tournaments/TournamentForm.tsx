@@ -229,7 +229,7 @@ export function TournamentForm({ initial, structureLocked = false, submitLabel, 
             Chaque joueur affronte un joueur de même bilan. Il se qualifie pour la suite après ses victoires, il est
             éliminé après ses défaites. Avec les réglages par défaut : round 1, puis repêchage pour les perdants.
           </p>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Choice
               legend="Victoires pour se qualifier"
               value={String(form.qualification_wins ?? 1)}
@@ -280,7 +280,7 @@ export function TournamentForm({ initial, structureLocked = false, submitLabel, 
           </p>
           {withGroups && (
             <>
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Choice
                   legend="Joueurs par partie"
                   value={String(form.group_size ?? 3)}

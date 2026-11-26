@@ -261,7 +261,7 @@ export function NewRankedMatchDialog({
       ) : (
         <>
           {viewer.isAdmin ? (
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {select(homeId, setHomeId, 'Joueur 1', awayId)}
               {select(awayId, setAwayId, 'Joueur 2', homeId)}
             </div>
