@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { deName, plural } from './french.ts'
+import { deName, ordinal, plural } from './french.ts'
 
 describe('français', () => {
   it('élide « de » devant une voyelle', () => {
@@ -14,5 +14,11 @@ describe('français', () => {
     expect(plural(0, 'joueur')).toBe('0 joueur')
     expect(plural(1, 'joueur')).toBe('1 joueur')
     expect(plural(8, 'joueur')).toBe('8 joueurs')
+  })
+
+  it('écrit les rangs', () => {
+    expect(ordinal(1)).toBe('1er')
+    expect(ordinal(2)).toBe('2e')
+    expect(ordinal(10)).toBe('10e')
   })
 })

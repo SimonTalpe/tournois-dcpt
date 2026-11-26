@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../../lib/supabase.ts'
+import { saveGame, setGameOwner } from '../darts/storage.ts'
 import { AuthContext, type Access, type AuthState, type Profile } from './AuthContext.ts'
 
 /** Suit la session Supabase et calcule le niveau d'accès (joueur, admin, spectateur…). */
@@ -26,6 +27,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const userId = session?.user.id ?? null
+  // Partie de fléchettes sauvegardée sur l'appareil : rattachée au compte connecté (valeur de module, sans effet sur le rendu).
+  setGameOwner(userId)
 
   // Lit la session courante (et non celle du dernier rendu) : `refresh` reste juste
   // même appelé juste après une connexion ou la saisie du code spectateur.
@@ -61,6 +64,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [loadAccess, userId])
 
   const signOut = useCallback(async () => {
+    // Partie de fléchettes en cours sur l'appareil : propre au compte qui se déconnecte.
+    saveGame(null)
     if (supabase) await supabase.auth.signOut()
   }, [])
 

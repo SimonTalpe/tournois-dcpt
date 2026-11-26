@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { ordinal } from '../lib/french.ts'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { DemoModeNotice, Icon, Notice, PageTitle } from '../components/ui.tsx'
 import { isAdmin, isPlayer, useAuth } from '../features/auth/AuthContext.ts'
@@ -173,7 +174,7 @@ export function Board({
     <div className="space-y-6">
       {me && (
         <section aria-label="Ta position" className="grid max-w-xl grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-1 bg-black p-4 text-white">
-          <span className="row-span-2 font-display text-[72px] leading-[0.85] font-black">{me.rank}e</span>
+          <span className="row-span-2 font-display text-[72px] leading-[0.85] font-black">{me.rank === null ? '—' : ordinal(me.rank)}</span>
           <span>
             <strong className="text-xl">{me.rating}</strong> <span className="text-sm">Elo</span>
           </span>

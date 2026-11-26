@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { ordinal } from '../../lib/french.ts'
 import { Link } from 'react-router'
 import { Notice } from '../../components/ui.tsx'
 import { listPlayerRankedMatches, loadEloHistory, type RankedMatch } from '../ranking/api.ts'
@@ -144,7 +145,7 @@ export function PlayerStatsView({ playerId }: { playerId: string }) {
                   </li>
                   {s.discipline === 'mini_pong' && s.setsFor + s.setsAgainst > 0 && (
                     <li>
-                      Sets : {s.setsFor} gagnés · {s.setsAgainst} perdus
+                      Sets : {s.setsFor} {s.setsFor > 1 ? 'gagnés' : 'gagné'} · {s.setsAgainst} {s.setsAgainst > 1 ? 'perdus' : 'perdu'}
                     </li>
                   )}
                   {s.walkovers > 0 && <li>Forfaits (non comptés) : {s.walkovers}</li>}
@@ -225,7 +226,7 @@ function EloCardView({ card }: { card: EloCard }) {
           {DISCIPLINE_LABELS[discipline]}
         </span>
         <Link to={`/classement?discipline=${discipline}`} className="text-xs font-normal text-ochre-text underline">
-          {entry?.rank ? `${entry.rank}${entry.rank === 1 ? 'er' : 'e'} / ${card.rankedCount}` : 'Classement'}
+          {entry?.rank ? `${ordinal(entry.rank)} / ${card.rankedCount}` : 'Classement'}
         </Link>
       </h3>
       <dl className="grid grid-cols-3 gap-2 text-center">

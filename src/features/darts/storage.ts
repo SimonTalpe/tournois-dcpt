@@ -32,16 +32,27 @@ export type SavedGame = {
   context?: MatchContext
   /** Manches déjà jouées (match en plusieurs manches). */
   previousLegs?: PlayedLeg[]
+  /** Session qui a lancé la partie (identifiant d'utilisateur) : un autre compte sur le même appareil ne la voit pas. */
+  owner?: string
 }
 
 const KEY = 'mpf.darts.game'
 
+/** Session courante (identifiant d'utilisateur, ou « local » sans compte), fixée par l'authentification. */
+let currentOwner = 'local'
+
+export function setGameOwner(owner: string | null): void {
+  currentOwner = owner ?? 'local'
+}
+
+/** Partie sauvegardée de la session courante, ou null (une partie d'un autre compte est ignorée). */
 export function loadSavedGame(): SavedGame | null {
   try {
     const raw = window.localStorage.getItem(KEY)
     if (!raw) return null
     const game = JSON.parse(raw) as SavedGame
     if (game?.version !== 1 || !Array.isArray(game.events) || !Array.isArray(game.participants)) return null
+    if (game.owner !== currentOwner) return null
     return game
   } catch {
     return null
@@ -50,7 +61,7 @@ export function loadSavedGame(): SavedGame | null {
 
 export function saveGame(game: SavedGame | null): void {
   try {
-    if (game) window.localStorage.setItem(KEY, JSON.stringify(game))
+    if (game) window.localStorage.setItem(KEY, JSON.stringify({ ...game, owner: currentOwner }))
     else window.localStorage.removeItem(KEY)
   } catch {
     // Stockage indisponible : la partie reste en mémoire.

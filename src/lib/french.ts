@@ -7,6 +7,11 @@ export function deName(name: string): string {
   return /^[aeiouyàâäéèêëîïôöùûüœæ]/i.test(name.trim()) ? `d’${name}` : `de ${name}`
 }
 
+/** Rang : « 1er », « 2e », « 10e ». */
+export function ordinal(rank: number): string {
+  return rank === 1 ? '1er' : `${rank}e`
+}
+
 /** Nombre + nom accordé : « 0 joueur », « 1 joueur », « 8 joueurs ». */
 export function plural(count: number, singular: string, pluralForm = `${singular}s`): string {
   return `${count} ${count > 1 ? pluralForm : singular}`
