@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { deName } from '../../lib/french.ts'
 import { Link } from 'react-router'
 import { Notice, PrimaryButton, SecondaryButton } from '../../components/ui.tsx'
 import { newGameId } from '../darts/storage.ts'
@@ -202,11 +203,13 @@ export function NewRankedMatchDialog({
     if (homeId === awayId) return setError('Choisis deux joueurs différents.')
     const parsed = parseRankedScore(form)
     if ('error' in parsed) return setError(parsed.error)
+    // Saisie valide : l'erreur précédente disparaît, même si la confirmation est annulée.
+    setError(null)
     const winner = parsed.winner === 'home' ? homeName : awayName
     const loser = parsed.winner === 'home' ? awayName : homeName
     if (
       !window.confirm(
-        `Enregistrer la victoire de ${winner} contre ${loser} ? ${loser === viewer.name || winner === viewer.name ? 'Ton adversaire sera notifié.' : 'Les deux joueurs seront notifiés.'}`,
+        `Enregistrer la victoire ${deName(winner)} contre ${loser} ? ${loser === viewer.name || winner === viewer.name ? 'Ton adversaire sera notifié.' : 'Les deux joueurs seront notifiés.'}`,
       )
     )
       return
@@ -363,8 +366,10 @@ export function RankedMatchDialog({
     if (!form || !match) return
     const parsed = parseRankedScore(form)
     if ('error' in parsed) return setError(parsed.error)
+    // Saisie valide : l'erreur précédente disparaît, même si la confirmation est annulée.
+    setError(null)
     const winner = parsed.winner === 'home' ? homeName : awayName
-    if (!window.confirm(`Corriger : victoire de ${winner} ? ${'L’Elo sera recalculé et ton adversaire notifié à nouveau.'}`))
+    if (!window.confirm(`Corriger : victoire ${deName(winner)} ? ${'L’Elo sera recalculé et ton adversaire notifié à nouveau.'}`))
       return
     return run(async () => {
       const deltas = await correctRankedMatch(match.id, parsed.score)

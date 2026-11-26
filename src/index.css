@@ -67,6 +67,11 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Un mot très long (adresse web, nom sans espace) passe à la ligne au lieu d'élargir la page sur mobile. */
+main {
+  overflow-wrap: anywhere;
+}
+
 /* Contenus en mise en forme riche (annonces, descriptions de tournoi, éditeur). */
 .rich-text > * + * {
   margin-top: 0.6em;

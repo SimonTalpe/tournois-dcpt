@@ -29,11 +29,12 @@ export function NameOnlySection() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
 
   const load = useCallback(async () => {
     try {
       const [list, accountList] = await Promise.all([listNameOnlyPlayers(), listLinkableAccounts()])
-      setPlayers(list)
+      setPlayers([...list].sort((a, b) => a.full_name.localeCompare(b.full_name, 'fr', { numeric: true, sensitivity: 'base' })))
       setAccounts(accountList)
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
@@ -51,6 +52,11 @@ export function NameOnlySection() {
     setNewName(player.full_name)
     setError(null)
     setMessage(null)
+  }
+
+  function close() {
+    setMode(null)
+    setError(null)
   }
 
   async function run(action: () => Promise<void>, success: string) {
@@ -105,15 +111,26 @@ export function NameOnlySection() {
         Joueurs sans compte. Quand l'un d'eux crée son compte, rattache-le : ses inscriptions et ses matchs passent sur
         son compte.
       </p>
-      {error && <Notice tone="error">{error}</Notice>}
+      {/* Erreur d'une action en cours : affichée sous le formulaire concerné (sinon hors de l'écran). */}
+      {error && !mode && <Notice tone="error">{error}</Notice>}
       {message && <Notice tone="success">{message}</Notice>}
+      {players && players.length > 8 && (
+        <input
+          type="search"
+          aria-label="Rechercher un nom seul"
+          placeholder="Rechercher un nom…"
+          className="w-full rounded-xl border border-black bg-white px-3 py-2.5 text-base"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      )}
       {!players ? (
         <p className="text-sm text-muted">Chargement…</p>
       ) : players.length === 0 ? (
         <p className="text-sm text-muted">Aucun nom seul.</p>
       ) : (
         <ul className="divide-y divide-black">
-          {players.map((player) => {
+          {players.filter((p) => !query.trim() || normalize(p.full_name).includes(normalize(query))).map((player) => {
             const current = mode?.playerId === player.id ? mode.kind : null
             return (
               <li key={player.id} className="space-y-2 py-3">
@@ -127,12 +144,12 @@ export function NameOnlySection() {
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <SecondaryButton disabled={busy} onClick={() => (current === 'link' ? setMode(null) : open(player, 'link'))}>
+                    <SecondaryButton disabled={busy} onClick={() => (current === 'link' ? close() : open(player, 'link'))}>
                       Rattacher à un compte
                     </SecondaryButton>
                     <SecondaryButton
                       disabled={busy}
-                      onClick={() => (current === 'rename' ? setMode(null) : open(player, 'rename'))}
+                      onClick={() => (current === 'rename' ? close() : open(player, 'rename'))}
                     >
                       Renommer
                     </SecondaryButton>
@@ -162,6 +179,9 @@ export function NameOnlySection() {
                     <SecondaryButton disabled={busy || !accountId} onClick={() => link(player)}>
                       Rattacher
                     </SecondaryButton>
+                    <SecondaryButton disabled={busy} onClick={close}>
+                      Annuler
+                    </SecondaryButton>
                   </div>
                 )}
                 {current === 'rename' && (
@@ -176,8 +196,12 @@ export function NameOnlySection() {
                     <SecondaryButton disabled={busy} onClick={() => rename(player)}>
                       Enregistrer
                     </SecondaryButton>
+                    <SecondaryButton disabled={busy} onClick={close}>
+                      Annuler
+                    </SecondaryButton>
                   </div>
                 )}
+                {current && error && <Notice tone="error">{error}</Notice>}
               </li>
             )
           })}

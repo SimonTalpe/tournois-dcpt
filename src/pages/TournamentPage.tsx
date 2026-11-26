@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { plural } from '../lib/french.ts'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { DemoModeNotice, Icon, Notice } from '../components/ui.tsx'
 import { RichText } from '../features/content/RichText.tsx'
@@ -129,7 +130,7 @@ export function TournamentPage() {
           Tous les tournois
         </Link>
         <p className="text-[15px] font-semibold">
-          {DISCIPLINE_LABELS[tournament.discipline]}, {entries.length} joueurs
+          {DISCIPLINE_LABELS[tournament.discipline]}, {plural(entries.length, 'joueur')}
         </p>
         <h1 className="font-display text-[46px] leading-[0.88] font-black sm:text-[72px] lg:text-[96px]">{tournament.name}</h1>
         <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[15px]">
@@ -150,15 +151,16 @@ export function TournamentPage() {
       </header>
       {tournament.description && <RichText html={tournament.description} />}
 
+      {/* Sur mobile, les onglets passent à la ligne plutôt que d’être coupés hors de l’écran. */}
       {tabs.length > 1 && (
-        <nav className="-mx-4 flex overflow-x-auto border-b-2 border-black px-4 sm:-mx-6 sm:px-6" aria-label="Sections du tournoi">
+        <nav className="-mx-4 flex flex-wrap border-b-2 border-black px-4 sm:-mx-6 sm:flex-nowrap sm:overflow-x-auto sm:px-6" aria-label="Sections du tournoi">
           {tabs.map((t) => (
             <button
               key={t.id}
               type="button"
               aria-current={tab === t.id ? 'page' : undefined}
               onClick={() => setSearchParams({ onglet: t.id }, { replace: true })}
-              className={`min-h-12 shrink-0 px-4 text-base font-semibold ${
+              className={`min-h-12 shrink-0 px-3 text-base font-semibold sm:px-4 ${
                 tab === t.id ? 'shadow-[inset_0_-5px_0_var(--color-ochre)]' : 'hover:bg-mist'
               }`}
             >

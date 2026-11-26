@@ -11,8 +11,14 @@ export const SLOT_RANGES: ReadonlyArray<readonly [string, string]> = [
   ['17:30', '19:00'],
 ]
 
-/** Plages en clair : « 12:00–13:30 ou 17:30–19:00 ». */
-export const SLOT_RANGES_LABEL = SLOT_RANGES.map(([a, b]) => `${a}–${b}`).join(' ou ')
+/** « 12:00 » → « 12 h », « 13:30 » → « 13 h 30 ». */
+export function formatHour(time: string): string {
+  const [h, m] = time.split(':')
+  return m === '00' ? `${Number(h)} h` : `${Number(h)} h ${m}`
+}
+
+/** Plages en clair : « de 12 h à 13 h 30 ou de 17 h 30 à 19 h ». */
+export const SLOT_RANGES_LABEL = SLOT_RANGES.map(([a, b]) => `de ${formatHour(a)} à ${formatHour(b)}`).join(' ou ')
 
 /** Créneaux de 15 minutes entre `first` et `last` inclus (« 12:00 », « 12:15 »…). */
 export function rangeSlots(first: string, last: string): string[] {
@@ -90,7 +96,7 @@ export function checkSchedule(date: string, time: string, current?: { date: stri
   if (!isWeekday(date)) return 'Les matchs se jouent du lundi au vendredi.'
   if (!/^\d{2}:(00|15|30|45)$/.test(time)) return 'Choisis une heure par tranche de 15 minutes.'
   const unchanged = current !== undefined && current.date === date && current.time === time
-  if (!unchanged && !isAllowedSlot(time)) return `Les matchs se jouent entre ${SLOT_RANGES_LABEL}.`
+  if (!unchanged && !isAllowedSlot(time)) return `Les matchs se jouent ${SLOT_RANGES_LABEL}.`
   return null
 }
 

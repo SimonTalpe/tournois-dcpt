@@ -33,11 +33,11 @@ export function AnnouncementCard({
         >
           {a.title}
         </h2>
-        <p className={`flex flex-wrap items-center gap-x-2 text-[13px] ${featured ? 'text-white' : 'text-muted'}`}>
+        <p className={`text-[13px] ${featured ? 'text-white' : 'text-muted'}`}>
           <span>Publiée le {formatDateTime(a.published_at)}</span>
           {a.expires_at && <span>, jusqu’au {formatDay(lastDayFromExpiry(a.expires_at))}</span>}
           {a.notify && <span>, joueurs notifiés</span>}
-          {badge}
+          {badge && <span className="ml-2 inline-block align-middle">{badge}</span>}
         </p>
       </header>
       <RichText html={a.body} className={featured ? 'max-w-[65ch] text-[17px] leading-relaxed' : 'max-w-[65ch]'} />

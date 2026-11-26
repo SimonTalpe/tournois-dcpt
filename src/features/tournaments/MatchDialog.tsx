@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { Notice, SecondaryButton } from '../../components/ui.tsx'
+import { deName } from '../../lib/french.ts'
 import { prepareTournamentGame } from '../darts/launch.ts'
 import { MatchLegsDetail } from '../darts/MatchLegsDetail.tsx'
 import { canSchedule } from '../../lib/schedule.ts'
@@ -100,14 +101,15 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
       if (!dartWinner) return setError('Choisis le vainqueur.')
       const winnerIsHome = dartWinner === match.home_player_id
       const legs = winnerIsHome ? { home: setsToWin, away: loserLegs } : { home: loserLegs, away: setsToWin }
-      if (setsToWin > 1 && !window.confirm(`Enregistrer la victoire de ${name(dartWinner)} (${legs.home}-${legs.away}) ?`)) return
+      const scoreText = setsToWin > 1 ? ` (${setsToWin}-${loserLegs})` : ''
+      if (!window.confirm(`Enregistrer la victoire ${deName(name(dartWinner))}${scoreText} ?`)) return
       return run(() => submitResult(match.id, { legs }))
     }
     if ('error' in parsed) return setError(parsed.error)
     const checked = checkMiniPongSets(parsed.sets, setsToWin)
     if (!checked.ok) return setError(checked.error)
     const winnerName = name(sideId(checked.winner))
-    if (!window.confirm(`Enregistrer la victoire de ${winnerName} ?`)) return
+    if (!window.confirm(`Enregistrer la victoire ${deName(winnerName)} ?`)) return
     return run(() => submitResult(match.id, { sets: parsed.sets }))
   }
 
@@ -214,7 +216,7 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
 
         {match.status === 'walkover' && (
           <Notice>
-            Forfait de {name(match.forfeit_player_id)} :{' '}
+            Forfait {deName(name(match.forfeit_player_id))} :{' '}
             {match.winner_player_id
               ? `${name(match.winner_player_id)} est qualifié d'office.`
               : "son adversaire sera qualifié d'office dès qu'il sera connu."}
@@ -278,7 +280,7 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
                           )
                         }
                       >
-                        Forfait de {name(id)}
+                        Forfait {deName(name(id))}
                       </SecondaryButton>
                     )
                   })}
@@ -361,14 +363,14 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
                         dartWinner === id ? 'border-court bg-court text-chalk' : 'border-black hover:bg-mist'
                       }`}
                     >
-                      Victoire de {name(id)}
+                      Victoire {deName(name(id))}
                     </button>
                   )
                 })}
                 {setsToWin > 1 && (
                   <fieldset className="space-y-1">
                     <legend className="text-sm text-muted">
-                      Manches gagnées par {dartWinner ? `l'adversaire de ${name(dartWinner)}` : 'le perdant'}
+                      Manches gagnées par {dartWinner ? `l'adversaire ${deName(name(dartWinner))}` : 'le perdant'}
                     </legend>
                     <div className="flex gap-2">
                       {Array.from({ length: setsToWin }, (_, n) => (
@@ -410,6 +412,7 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
                         onChange={(e) => {
                           const value = e.target.value.replace(/\D/g, '')
                           setRows((current) => current.map((r, j) => (j === i ? { ...r, [side]: value } : r)))
+                          setError(null)
                         }}
                       />
                     ))}
@@ -419,9 +422,9 @@ export function MatchDialog({ bundle, match, viewer, onClose, onSaved }: Props) 
                   {setsToWin} set{setsToWin > 1 ? 's' : ''} gagnant{setsToWin > 1 ? 's' : ''} de 11 points, 2 points
                   d'écart. Laisse vides les sets non joués.
                 </p>
-                {preview && (
+                {preview && !(error && !preview.ok && preview.error === error) && (
                   <p className={`text-sm ${preview.ok ? 'text-court' : 'text-muted'}`}>
-                    {preview.ok ? `✓ Victoire de ${name(sideId(preview.winner))}` : preview.error}
+                    {preview.ok ? `✓ Victoire ${deName(name(sideId(preview.winner)))}` : preview.error}
                   </p>
                 )}
               </div>

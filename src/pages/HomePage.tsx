@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { plural } from '../lib/french.ts'
 import { Link } from 'react-router'
 import { DemoModeNotice, Notice, SectionTitle } from '../components/ui.tsx'
 import { listAnnouncements, type Announcement } from '../features/announcements/api.ts'
@@ -189,7 +190,7 @@ export function HomePage() {
                         className={`block p-4 text-white ${dark ? 'bg-black' : 'bg-ochre'}`}
                       >
                         <span className="block text-sm font-semibold">
-                          {DISCIPLINE_LABELS[b.tournament.discipline]}, {b.entries.length} joueurs
+                          {DISCIPLINE_LABELS[b.tournament.discipline]}, {plural(b.entries.length, 'joueur')}
                         </span>
                         <span className="mt-1 block font-display text-[32px] leading-[0.9] font-black">{b.tournament.name}</span>
                         <span className="mt-1.5 block text-sm">
