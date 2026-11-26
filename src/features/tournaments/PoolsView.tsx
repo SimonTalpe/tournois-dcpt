@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { deName } from '../../lib/french.ts'
 import { SecondaryButton } from '../../components/ui.tsx'
 import { formatSchedule } from '../../lib/schedule.ts'
 import { setsWon } from '../../lib/scores.ts'
@@ -34,7 +35,7 @@ export function PoolsView({ bundle, highlightPlayerId, onOpenMatch, viewer, onSa
   const score = (m: Match) => {
     if (m.status === 'walkover') {
       return (
-        <span className="text-[10px] font-semibold text-clay" title={`Forfait de ${name(m.forfeit_player_id)}`}>
+        <span className="text-[10px] font-semibold text-clay" title={`Forfait ${deName(name(m.forfeit_player_id))}`}>
           forfait
         </span>
       )

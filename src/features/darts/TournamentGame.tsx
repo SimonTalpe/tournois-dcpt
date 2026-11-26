@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { deName } from '../../lib/french.ts'
 import { Notice, PrimaryButton } from '../../components/ui.tsx'
 import { recordDartMatch, recordDartTiebreak } from './api.ts'
 import { medal, type Dart } from './darts.ts'
@@ -142,7 +143,7 @@ export function TournamentGame({ game, onChange, onLeave }: Props) {
       {banner}
       <div>
         <h1 className="font-display text-[56px] leading-[0.9] font-black sm:text-[72px]">
-          {context.kind === 'match' ? `Victoire de ${name(progress.winner)}` : 'Départage terminé'}
+          {context.kind === 'match' ? `Victoire ${deName(name(progress.winner))}` : 'Départage terminé'}
         </h1>
         <p className="text-sm text-muted">Vérifie le résultat avant de le valider : il sera reporté dans le tournoi.</p>
       </div>

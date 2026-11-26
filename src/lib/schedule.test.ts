@@ -38,12 +38,12 @@ describe('horaires des matchs', () => {
     expect(checkSchedule('2026-12-05', '12:30')).toMatch(/lundi au vendredi/)
     expect(checkSchedule('2026-12-02', '12:20')).toMatch(/15 minutes/)
     expect(checkSchedule('2026-12-02', '19:00')).toBeNull()
-    expect(checkSchedule('2026-12-02', '08:00')).toMatch(/12:00–13:30 ou 17:30–19:00/)
-    expect(checkSchedule('2026-12-02', '14:00')).toMatch(/12:00–13:30 ou 17:30–19:00/)
+    expect(checkSchedule('2026-12-02', '08:00')).toMatch(/de 12 h à 13 h 30 ou de 17 h 30 à 19 h/)
+    expect(checkSchedule('2026-12-02', '14:00')).toMatch(/de 12 h à 13 h 30 ou de 17 h 30 à 19 h/)
     // Horaire hors plages déjà enregistré : conservé tel quel, mais pas déplacé hors plages.
     const old = { date: '2026-12-02', time: '08:00' }
     expect(checkSchedule('2026-12-02', '08:00', old)).toBeNull()
-    expect(checkSchedule('2026-12-03', '08:00', old)).toMatch(/12:00–13:30/)
+    expect(checkSchedule('2026-12-03', '08:00', old)).toMatch(/de 12 h à 13 h 30/)
   })
 })
 

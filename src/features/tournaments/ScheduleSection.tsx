@@ -67,7 +67,7 @@ export function ScheduleSection({ match, locations, canEdit, onSaved }: Props) {
       {summary}
       {editing && (
         <div className="space-y-2 rounded-xl bg-chalk p-3">
-          <p className="text-xs text-muted">Du lundi au vendredi, entre {SLOT_RANGES_LABEL}. Ton adversaire peut aussi modifier.</p>
+          <p className="text-xs text-muted">Du lundi au vendredi, {SLOT_RANGES_LABEL}. Ton adversaire peut aussi modifier.</p>
           <div className="grid grid-cols-2 gap-2">
             <label className="space-y-1 text-sm">
               <span className="block font-medium">Jour</span>

@@ -60,7 +60,7 @@ const MESSAGES_BY_DB_ERROR: Record<string, string> = {
   QUALIFICATION_LOOP: 'Erreur inattendue dans la création des matchs de qualification. Préviens l’administrateur.',
   FINAL_PHASE_EXISTS:
     'La phase finale est générée : les résultats de poule et de qualification sont figés. Annule la phase finale (Gestion) pour les modifier.',
-  SCHEDULE_OUTSIDE_HOURS: 'Les matchs se jouent entre 12:00–13:30 ou 17:30–19:00.',
+  SCHEDULE_OUTSIDE_HOURS: 'Les matchs se jouent de 12 h à 13 h 30 ou de 17 h 30 à 19 h.',
   SCHEDULE_LOCKED: 'Le résultat est saisi : lieu et horaire ne sont plus modifiables (sauf par l’admin).',
   SWAP_NOT_POSSIBLE: 'Inversion impossible : le match a déjà un résultat (ou est un exempt).',
   LAST_ADMIN: 'Tu es le seul admin : nomme un autre admin avant de supprimer ton compte.',

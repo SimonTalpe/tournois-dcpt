@@ -255,16 +255,21 @@ export function TournamentAdmin({ bundle, reload, onDeleted }: Props) {
                   : n === 1
                     ? '1 set gagnant'
                     : `${n} sets gagnants`
+              // Verrouillé dès qu'un match du tour est joué (score ou forfait) : règle appliquée aussi par la base.
+              const locked = matches.some((m) => m.round_id === round.id && ['played', 'walkover'].includes(m.status))
               return (
                 <li key={round.id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 py-2">
-                  <span className="text-sm">{round.name}</span>
+                  <span className="text-sm">
+                    {round.name}
+                    {locked && <span className="block text-xs text-muted">Figé : un match de ce tour est joué.</span>}
+                  </span>
                   <span className="flex flex-wrap items-center gap-2">
                     {tournament.discipline === 'darts' && (
                       <select
                         aria-label={`Départ — ${round.name}`}
                         className="rounded-lg border border-black px-2 py-1.5 text-sm"
                         value={round.dart_start}
-                        disabled={busy}
+                        disabled={busy || locked}
                         onChange={(e) => update({ dart_start: Number(e.target.value) })}
                       >
                         {[301, 501].map((n) => (
@@ -278,7 +283,7 @@ export function TournamentAdmin({ bundle, reload, onDeleted }: Props) {
                       aria-label={`${tournament.discipline === 'darts' ? 'Manches' : 'Sets'} — ${round.name}`}
                       className="rounded-lg border border-black px-2 py-1.5 text-sm"
                       value={round.sets_to_win}
-                      disabled={busy}
+                      disabled={busy || locked}
                       onChange={(e) => update({ sets_to_win: Number(e.target.value) })}
                     >
                       {[1, 2, 3].map((n) => (
@@ -293,7 +298,7 @@ export function TournamentAdmin({ bundle, reload, onDeleted }: Props) {
                           type="checkbox"
                           className="h-4 w-4 accent-court"
                           checked={round.dart_double_out}
-                          disabled={busy}
+                          disabled={busy || locked}
                           onChange={(e) => update({ dart_double_out: e.target.checked })}
                         />
                         Sortie double
