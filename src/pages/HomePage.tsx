@@ -256,6 +256,11 @@ function MyMatchesBox({ matches, today }: { matches: MyMatch[]; today: string })
                   {DISCIPLINE_LABELS[m.tournament.discipline]} contre {m.opponent}
                   {m.locationName ? `, ${m.locationName}` : ''}
                 </span>
+                {m.match.scheduled_at && Date.parse(m.match.scheduled_at) < Date.now() && (
+                  <span className="mt-1 block text-[13px] font-semibold text-ochre-light">
+                    Horaire passé : saisis le résultat ou propose un nouvel horaire.
+                  </span>
+                )}
               </Link>
             </li>
           ))}
